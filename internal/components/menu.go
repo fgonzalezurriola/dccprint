@@ -29,6 +29,21 @@ func (m Menu) Init() tea.Cmd {
 	return nil
 }
 
+func (m Menu) View() string {
+	s := ""
+	for i, item := range m.items {
+		cursor := " "
+		textStyle := lipgloss.NewStyle().Foreground(m.theme.Unselected)
+
+		if m.cursor == i {
+			cursor = lipgloss.NewStyle().Foreground(m.theme.Selected).Render(">")
+			textStyle = lipgloss.NewStyle().Foreground(m.theme.Selected)
+		}
+		s += fmt.Sprintf("%s %s\n", cursor, textStyle.Render(item))
+	}
+	return s
+}
+
 func (m Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -46,21 +61,6 @@ func (m Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
-}
-
-func (m Menu) View() string {
-	s := ""
-	for i, item := range m.items {
-		cursor := " "
-		textStyle := lipgloss.NewStyle().Foreground(m.theme.Unselected)
-
-		if m.cursor == i {
-			cursor = lipgloss.NewStyle().Foreground(m.theme.Selected).Render(">")
-			textStyle = lipgloss.NewStyle().Foreground(m.theme.Selected)
-		}
-		s += fmt.Sprintf("%s %s\n", cursor, textStyle.Render(item))
-	}
-	return s
 }
 
 func (m *Menu) SelectedItem() string {

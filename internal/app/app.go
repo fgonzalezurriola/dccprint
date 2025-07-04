@@ -25,11 +25,11 @@ type Model struct {
 	height      int
 }
 
-func New() Model {
+func NewModel() Model {
 	cfg := config.Load()
 	t := theme.New(cfg.Theme)
 
-	mainMenuItems := []string{"Imprimir", "Cuenta", "Theme", "Salir"}
+	mainMenuItems := []string{"Imprimir PDF", "Configurar Cuenta", "Theme", "Salir"}
 	themeMenuItems := []string{"Default", "Cadcc", "Anakena"}
 
 	//printerMenuItems := []string{"Salita", "Toqui"}
@@ -67,6 +67,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.currentView != mainView {
 				m.currentView = mainView
 			}
+
+		case "enter":
+			switch m.currentView {
+			case mainView:
+				switch m.mainMenu.SelectedItem() {
+				case "Imprimir PDF":
+					//
+				case "Configurar Cuenta":
+					//
+				case "Theme":
+					m.currentView = themeView
+				case "Salir":
+					return m, tea.Quit
+				}
+			case themeView:
+				selectedTheme := m.themeMenu.SelectedItem()
+				m.theme = theme.New(selectedTheme)
+				config.Save(selectedTheme)
+				m.currentView = mainView
+			}
 		}
 	}
 
@@ -81,7 +101,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mainMenu.Reset()
 		case "Salir":
 			return m, tea.Quit
-
 		}
 
 	case themeView:
@@ -133,14 +152,14 @@ func (m Model) renderHeader() string {
 	headerStyle := lipgloss.NewStyle().
 		Background(m.theme.Header).
 		Foreground(m.theme.Foreground).
-		Padding(1, 2)
+		Padding(1, 20)
 
-	title := headerStyle.Render("Titulo de prueba")
+	title := headerStyle.Render("DCC PRINT")
 
 	line := lipgloss.NewStyle().
 		Background(m.theme.Background).
 		Height(1).
 		Render("")
 
-	return lipgloss.JoinVertical(lipgloss.Left, line, title, line)
+	return lipgloss.JoinVertical(lipgloss.Left, title, line)
 }
