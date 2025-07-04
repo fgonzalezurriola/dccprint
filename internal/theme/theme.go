@@ -1,0 +1,56 @@
+package theme
+
+import "github.com/charmbracelet/lipgloss"
+
+type Theme struct {
+	Selected   lipgloss.Color
+	Unselected lipgloss.Color
+	Foreground lipgloss.Color
+	Background lipgloss.Color
+	Border     lipgloss.Color
+	Header     lipgloss.Color
+	Footer     lipgloss.Color
+	Accent     lipgloss.Color
+}
+
+var themes = map[string]*Theme{
+	"Default": {
+		Selected:   lipgloss.Color("212"), // Pink
+		Unselected: lipgloss.Color("240"), // Gray
+		Foreground: lipgloss.Color("252"), // Light Gray
+		Background: lipgloss.Color("235"), // Dark Gray
+		Border:     lipgloss.Color("238"), // Darker Gray
+		Header:     lipgloss.Color("212"), // Pink
+		Footer:     lipgloss.Color("212"), // Pink
+		Accent:     lipgloss.Color("86"),  // Green
+	},
+	"Cadcc": {
+		Selected:   lipgloss.Color("197"), // Bright pink
+		Unselected: lipgloss.Color("240"), // Mid grey
+		Foreground: lipgloss.Color("228"), // Light yellow
+		Background: lipgloss.Color("235"), // Gris oscuro
+		Border:     lipgloss.Color("23"),  // Midnight green
+		Header:     lipgloss.Color("197"), // Bright pink
+		Footer:     lipgloss.Color("32"),  // Blue
+		Accent:     lipgloss.Color("49"),  // Emerald
+	},
+	"Anakena": {
+		Selected:   lipgloss.Color("215"), // Coral orange
+		Unselected: lipgloss.Color("236"), // Dark gray
+		Foreground: lipgloss.Color("252"), // Light gray
+		Background: lipgloss.Color("234"), // Very dark gray
+		Border:     lipgloss.Color("34"),  // Leaf green
+		Header:     lipgloss.Color("215"), // Coral orange
+		Footer:     lipgloss.Color("34"),  // Leaf green
+		Accent:     lipgloss.Color("67"),  // Muted blue
+	},
+}
+
+// function New returns a Theme by its name
+// If the name is not found, returns "Default"
+func New(name string) *Theme {
+	if t, ok := themes[name]; ok {
+		return t
+	}
+	return themes["Default"]
+}
