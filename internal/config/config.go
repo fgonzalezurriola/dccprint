@@ -12,7 +12,7 @@ type Config struct {
 
 func configPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".dccprint_config.json")
+	return filepath.Join(home, "~/.dccprint_config.json")
 }
 
 func Load() Config {

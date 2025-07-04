@@ -1,16 +1,19 @@
 package app
 
 import (
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+
 	"github.com/fgonzalezurriola/dccprint/internal/components"
 	"github.com/fgonzalezurriola/dccprint/internal/config"
 	"github.com/fgonzalezurriola/dccprint/internal/theme"
-
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 const (
 	mainView viewState = iota
+	printView
+	accountView
 	themeView
 )
 
@@ -29,7 +32,7 @@ func NewModel() Model {
 	cfg := config.Load()
 	t := theme.New(cfg.Theme)
 
-	mainMenuItems := []string{"Imprimir PDF", "Configurar Cuenta", "Theme", "Salir"}
+	mainMenuItems := []string{"Imprimir PDF", "Configurar Cuenta", "Cambiar Theme", "Salir"}
 	themeMenuItems := []string{"Default", "Cadcc", "Anakena"}
 
 	//printerMenuItems := []string{"Salita", "Toqui"}
@@ -68,7 +71,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentView = mainView
 			}
 
-		case "enter":
+		case "enter", " ", "tab":
 			switch m.currentView {
 			case mainView:
 				switch m.mainMenu.SelectedItem() {
@@ -76,7 +79,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					//
 				case "Configurar Cuenta":
 					//
-				case "Theme":
+				case "Cambiar Theme":
 					m.currentView = themeView
 				case "Salir":
 					return m, tea.Quit
