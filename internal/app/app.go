@@ -20,12 +20,13 @@ const (
 type viewState int
 
 type Model struct {
-	currentView viewState
-	mainMenu    components.Menu
-	themeMenu   components.Menu
-	theme       *theme.Theme
-	width       int
-	height      int
+	currentView  viewState
+	mainMenu     components.Menu
+	themeMenu    components.Menu
+	theme        *theme.Theme
+	width        int
+	height       int
+	accountInput textinput.Model
 }
 
 func NewModel() Model {
@@ -37,11 +38,19 @@ func NewModel() Model {
 
 	//printerMenuItems := []string{"Salita", "Toqui"}
 
+	// Account handler
+	ti := textinput.New()
+	ti.Placeholder = "Ingrese su cuenta"
+	ti.Focus()
+	ti.CharLimit = 9
+	// ti.width
+
 	return Model{
-		currentView: mainView,
-		mainMenu:    components.NewMenu(mainMenuItems, t),
-		themeMenu:   components.NewMenu(themeMenuItems, t),
-		theme:       t,
+		currentView:  mainView,
+		mainMenu:     components.NewMenu(mainMenuItems, t),
+		themeMenu:    components.NewMenu(themeMenuItems, t),
+		theme:        t,
+		accountInput: ti,
 	}
 
 }
@@ -60,6 +69,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mainMenu.SetSize(msg.Width, msg.Height)
 		m.themeMenu.SetSize(msg.Width, msg.Height)
 
+	// Basic commands interactions (Close app, back, select)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -69,8 +79,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			if m.currentView != mainView {
 				m.currentView = mainView
+				return m, nil
 			}
-
 		case "enter", " ", "tab":
 			switch m.currentView {
 			case mainView:
@@ -89,6 +99,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.theme = theme.New(selectedTheme)
 				config.Save(selectedTheme)
 				m.currentView = mainView
+			case accountView:
+				accountInput := m.accountInput.Value()
+				config.SaveAccount(accountInput)
+				m.currentView = mainView
 			}
 		}
 	}
@@ -102,6 +116,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "Cambiar Theme":
 			m.currentView = themeView
 			m.mainMenu.Reset()
+		case "Configurar Cuenta":
+			m.currentView = accountView
+			m.accountInput.Focus()
 		case "Salir":
 			return m, tea.Quit
 		}
@@ -123,8 +140,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView = mainView
 			m.themeMenu.Reset()
 		}
+	case accountView:
+		var inputCmd tea.Cmd
+		m.accountInput, inputCmd = m.accountInput.Update(msg)
+		if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
+			account := m.accountInput.Value()
+			config.SaveAccount(account)
+			m.currentView = mainView
+			m.accountInput.SetValue("")
+		}
+		return m, inputCmd
 	}
-
 	return m, cmd
 }
 
@@ -137,6 +163,8 @@ func (m Model) View() string {
 		view = m.mainMenu.View()
 	case themeView:
 		view = m.themeMenu.View()
+	case accountView:
+		view = m.accountInput.View()
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, header, view)
