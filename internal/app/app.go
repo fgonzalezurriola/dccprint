@@ -18,16 +18,6 @@ const (
 	themeView
 )
 
-const Logo = `
- ██████╗   ██████╗  ██████╗     ██████╗  ██████╗  ██╗ ███╗   ██╗ ████████╗
- ██╔══██╗ ██╔════╝ ██╔════╝     ██╔══██╗ ██╔══██╗ ██║ ████╗  ██║ ╚══██╔══╝
- ██║  ██║ ██║      ██║          ██████╔╝ ██████╔╝ ██║ ██╔██╗ ██║    ██║
- ██║  ██║ ██║      ██║          ██╔═══╝  ██╔══██╗ ██║ ██║╚██╗██║    ██║
- ██████╔╝ ╚██████╗ ╚██████╗     ██║      ██║  ██║ ██║ ██║ ╚████║    ██║
- ╚═════╝   ╚═════╝  ╚═════╝     ╚═╝      ╚═╝  ╚═╝ ╚═╝ ╚═╝  ╚═══╝    ╚═╝
-`
-const LogoWidth = 85
-
 type viewState int
 
 type Model struct {
@@ -148,7 +138,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) View() string {
-	header := m.renderHeader()
+	header := components.RenderHeader(m.width, m.theme)
 	var view string
 
 	switch m.currentView {
@@ -174,26 +164,4 @@ func (m *Model) View() string {
 		lipgloss.Center,
 		centeredContent,
 	)
-}
-
-func (m *Model) renderHeader() string {
-
-	baseStyle := lipgloss.NewStyle().
-		Background(m.theme.Selected).
-		Foreground(m.theme.Header)
-	headerStyle := baseStyle
-	var header string
-	var headerMessage string
-	if m.width > LogoWidth {
-		headerMessage = Logo
-		headerStyle = baseStyle.Padding(1, 1)
-	} else {
-		headerMessage = "DCC PRINT"
-		headerStyle = baseStyle.Padding(1, 8)
-	}
-	header = headerStyle.Render(headerMessage)
-
-	line := lipgloss.NewStyle().Background(m.theme.Background).Height(1).Render("")
-
-	return lipgloss.JoinVertical(lipgloss.Left, header, line)
 }
