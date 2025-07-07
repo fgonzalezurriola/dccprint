@@ -11,66 +11,64 @@ type Config struct {
 	Account string `json:"account"`
 }
 
-func configPath() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, "~/.dccprint_config.json")
+func configPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".dccprint_config.json"), nil
 }
 
 func Load() Config {
-	path := configPath()
+	path, err := configPath()
+	if err != nil {
+		return Config{Theme: "Default", Account: ""}
+	}
+
 	file, err := os.Open(path)
 	if err != nil {
-		return Config{Theme: "Default"}
+		return Config{Theme: "Default", Account: ""}
 	}
 	defer file.Close()
 
 	var cfg Config
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&cfg); err != nil {
-		return Config{Theme: "Default"}
+		return Config{Theme: "Default", Account: ""}
 	}
+
+	if cfg.Theme == "" {
+		cfg.Theme = "Default"
+	}
+
 	return cfg
 }
 
-func Save(theme string) {
-	path := configPath()
-	cfg := Config{Theme: theme}
+func save(cfg Config) error {
+	path, err := configPath()
+	if err != nil {
+		return err
+	}
 
 	file, err := os.Create(path)
 	if err != nil {
-		return
+		return err
 	}
 	defer file.Close()
 
 	encoder := json.NewEncoder(file)
-	_ = encoder.Encode(cfg)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(cfg)
 }
 
-func LoadAccount() Config {
-	path := configPath()
-	file, err := os.Open(path)
-	if err != nil {
-		return Config{Account: ""}
-	}
-	defer file.Close()
-
-	var cfg Config
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
-		return Config{Account: "Account"}
-	}
-	return cfg
+func SaveTheme(theme string) error {
+	cfg := Load()
+	cfg.Theme = theme
+	return save(cfg)
 }
 
-func SaveAccount(account string) {
-	path := configPath()
-	cfg := Config{Account: account}
-	file, err := os.Create(path)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	_ = encoder.Encode(cfg)
+func SaveAccount(account string) error {
+	cfg := Load()
+	cfg.Account = account
+	return save(cfg)
 }

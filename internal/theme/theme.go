@@ -25,14 +25,14 @@ var themes = map[string]*Theme{
 		Accent:     lipgloss.Color("86"),  // Green
 	},
 	"Cadcc": {
-		Selected:   lipgloss.Color("197"), // Bright pink
+		Selected:   lipgloss.Color("32"),  // Blue
 		Unselected: lipgloss.Color("240"), // Mid grey
 		Foreground: lipgloss.Color("228"), // Light yellow
 		Background: lipgloss.Color("235"), // Gris oscuro
 		Border:     lipgloss.Color("23"),  // Midnight green
 		Header:     lipgloss.Color("197"), // Bright pink
-		Footer:     lipgloss.Color("32"),  // Blue
-		Accent:     lipgloss.Color("49"),  // Emerald
+		Footer:     lipgloss.Color("197"),
+		Accent:     lipgloss.Color("49"), // Emerald
 	},
 	"Anakena": {
 		Selected:   lipgloss.Color("215"), // Coral orange

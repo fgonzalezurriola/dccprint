@@ -13,6 +13,7 @@ import (
 const (
 	mainView viewState = iota
 	printView
+	//configView
 	accountView
 	themeView
 )
@@ -20,8 +21,10 @@ const (
 type viewState int
 
 type Model struct {
-	currentView  viewState
-	mainMenu     components.Menu
+	currentView viewState
+	mainMenu    components.Menu
+	// printView    components.Menu
+	// configView   components.Menu
 	themeMenu    components.Menu
 	theme        *theme.Theme
 	width        int
@@ -29,132 +32,112 @@ type Model struct {
 	accountInput textinput.Model
 }
 
-func NewModel() Model {
+func NewModel() *Model {
 	cfg := config.Load()
 	t := theme.New(cfg.Theme)
 
 	mainMenuItems := []string{"Imprimir PDF", "Configurar Cuenta", "Cambiar Theme", "Salir"}
 	themeMenuItems := []string{"Default", "Cadcc", "Anakena"}
 
-	//printerMenuItems := []string{"Salita", "Toqui"}
-
-	// Account handler
 	ti := textinput.New()
-	ti.Placeholder = "Ingrese su cuenta"
+	ti.Placeholder = "Ingresa el nombre de cuenta (sin @)"
 	ti.Focus()
-	ti.CharLimit = 9
-	// ti.width
+	ti.CharLimit = 16
+	ti.SetValue(cfg.Account)
 
-	return Model{
+	return &Model{
 		currentView:  mainView,
 		mainMenu:     components.NewMenu(mainMenuItems, t),
 		themeMenu:    components.NewMenu(themeMenuItems, t),
 		theme:        t,
 		accountInput: ti,
 	}
-
 }
 
-func (m Model) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
+	// Handle global messages first
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 		m.mainMenu.SetSize(msg.Width, msg.Height)
 		m.themeMenu.SetSize(msg.Width, msg.Height)
+		return m, nil
 
-	// Basic commands interactions (Close app, back, select)
 	case tea.KeyMsg:
+		// Handle global keybindings
 		switch msg.String() {
 		case "ctrl+c", "q":
-			if m.currentView == mainView {
-				return m, tea.Quit
-			}
+			return m, tea.Quit
 		case "esc":
 			if m.currentView != mainView {
+				m.mainMenu.Reset()
 				m.currentView = mainView
 				return m, nil
-			}
-		case "enter", " ", "tab":
-			switch m.currentView {
-			case mainView:
-				switch m.mainMenu.SelectedItem() {
-				case "Imprimir PDF":
-					//
-				case "Configurar Cuenta":
-					//
-				case "Cambiar Theme":
-					m.currentView = themeView
-				case "Salir":
-					return m, tea.Quit
-				}
-			case themeView:
-				selectedTheme := m.themeMenu.SelectedItem()
-				m.theme = theme.New(selectedTheme)
-				config.Save(selectedTheme)
-				m.currentView = mainView
-			case accountView:
-				accountInput := m.accountInput.Value()
-				config.SaveAccount(accountInput)
-				m.currentView = mainView
 			}
 		}
 	}
 
 	switch m.currentView {
 	case mainView:
-		newMenu, newCmd := m.mainMenu.Update(msg)
+		// Update menu first
+		newMenu, menuCmd := m.mainMenu.Update(msg)
 		m.mainMenu = newMenu.(components.Menu)
-		cmd = newCmd
-		switch m.mainMenu.SelectedItem() {
-		case "Cambiar Theme":
-			m.currentView = themeView
-			m.mainMenu.Reset()
-		case "Configurar Cuenta":
-			m.currentView = accountView
-			m.accountInput.Focus()
-		case "Salir":
-			return m, tea.Quit
+		cmd = menuCmd
+
+		if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
+			switch m.mainMenu.SelectedItem() {
+			case "Imprimir PDF":
+				// Todo
+			case "Configurar Cuenta":
+				m.currentView = accountView
+				m.accountInput.Focus()
+			case "Cambiar Theme":
+				m.themeMenu.Reset()
+				m.currentView = themeView
+			case "Salir":
+				return m, tea.Quit
+			}
 		}
 
 	case themeView:
-		newMenu, newCmd := m.themeMenu.Update(msg)
+		newMenu, menuCmd := m.themeMenu.Update(msg)
 		m.themeMenu = newMenu.(components.Menu)
-		cmd = newCmd
+		cmd = menuCmd
 
-		switch m.themeMenu.SelectedItem() {
-		case "Default", "Cadcc", "Anakena":
-			config.Save(m.themeMenu.SelectedItem())
-			m.theme = theme.New(m.themeMenu.SelectedItem())
+		if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
+			selectedTheme := m.themeMenu.SelectedItem()
+			config.SaveTheme(selectedTheme)
+			m.theme = theme.New(selectedTheme)
 			m.mainMenu.SetTheme(m.theme)
 			m.themeMenu.SetTheme(m.theme)
+			m.mainMenu.Reset()
 			m.currentView = mainView
-			m.themeMenu.Reset()
-		case "Volver":
-			m.currentView = mainView
-			m.themeMenu.Reset()
 		}
+
 	case accountView:
-		var inputCmd tea.Cmd
-		m.accountInput, inputCmd = m.accountInput.Update(msg)
 		if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
 			account := m.accountInput.Value()
 			config.SaveAccount(account)
+			m.mainMenu.Reset()
 			m.currentView = mainView
-			m.accountInput.SetValue("")
+		} else {
+			var inputCmd tea.Cmd
+			m.accountInput, inputCmd = m.accountInput.Update(msg)
+			cmd = inputCmd
 		}
-		return m, inputCmd
 	}
+
 	return m, cmd
 }
 
-func (m Model) View() string {
+func (m *Model) View() string {
 	header := m.renderHeader()
 	var view string
 
@@ -179,7 +162,7 @@ func (m Model) View() string {
 	)
 }
 
-func (m Model) renderHeader() string {
+func (m *Model) renderHeader() string {
 	headerStyle := lipgloss.NewStyle().
 		Background(m.theme.Header).
 		Foreground(m.theme.Foreground).
