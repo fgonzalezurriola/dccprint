@@ -30,8 +30,8 @@ var themes = map[string]*Theme{
 		Foreground: lipgloss.Color("228"), // Light yellow
 		Background: lipgloss.Color("235"), // Gris oscuro
 		Border:     lipgloss.Color("23"),  // Midnight green
-		Header:     lipgloss.Color("32"),  // Bright pink
-		Footer:     lipgloss.Color("32"),
+		Header:     lipgloss.Color("228"),
+		Footer:     lipgloss.Color("228"),
 		Accent:     lipgloss.Color("49"), // Emerald
 	},
 	"Anakena": {

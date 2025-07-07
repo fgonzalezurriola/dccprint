@@ -1,7 +1,6 @@
 package app
 
 import (
-	_ "embed"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -19,7 +18,7 @@ const (
 	themeView
 )
 
-const logo = `
+const Logo = `
  ██████╗   ██████╗  ██████╗     ██████╗  ██████╗  ██╗ ███╗   ██╗ ████████╗
  ██╔══██╗ ██╔════╝ ██╔════╝     ██╔══██╗ ██╔══██╗ ██║ ████╗  ██║ ╚══██╔══╝
  ██║  ██║ ██║      ██║          ██████╔╝ ██████╔╝ ██║ ██╔██╗ ██║    ██║
@@ -27,6 +26,7 @@ const logo = `
  ██████╔╝ ╚██████╗ ╚██████╗     ██║      ██║  ██║ ██║ ██║ ╚████║    ██║
  ╚═════╝   ╚═════╝  ╚═════╝     ╚═╝      ╚═╝  ╚═╝ ╚═╝ ╚═╝  ╚═══╝    ╚═╝
 `
+const LogoWidth = 85
 
 type viewState int
 
@@ -176,21 +176,24 @@ func (m *Model) View() string {
 	)
 }
 
-//go:embed logo.txt
-var content []byte
-
 func (m *Model) renderHeader() string {
-	headerStyle := lipgloss.NewStyle().
+
+	baseStyle := lipgloss.NewStyle().
 		Background(m.theme.Selected).
-		Foreground(m.theme.Header).
-		Padding(1, 20)
+		Foreground(m.theme.Header)
+	headerStyle := baseStyle
+	var header string
+	var headerMessage string
+	if m.width > LogoWidth {
+		headerMessage = Logo
+		headerStyle = baseStyle.Padding(1, 1)
+	} else {
+		headerMessage = "DCC PRINT"
+		headerStyle = baseStyle.Padding(1, 8)
+	}
+	header = headerStyle.Render(headerMessage)
 
-	title := headerStyle.Render("DCC PRINT")
+	line := lipgloss.NewStyle().Background(m.theme.Background).Height(1).Render("")
 
-	line := lipgloss.NewStyle().
-		Background(m.theme.Background).
-		Height(1).
-		Render("")
-
-	return lipgloss.JoinVertical(lipgloss.Left, title, line)
+	return lipgloss.JoinVertical(lipgloss.Left, header, line)
 }
