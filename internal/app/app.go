@@ -13,7 +13,7 @@ import (
 const (
 	mainView viewState = iota
 	printView
-	//configView
+	configView
 	accountView
 	themeView
 )
@@ -21,10 +21,10 @@ const (
 type viewState int
 
 type Model struct {
-	currentView viewState
-	mainMenu    components.Menu
-	// printView    components.Menu
-	// configView   components.Menu
+	currentView  viewState
+	mainMenu     components.Menu
+	printView    components.Menu
+	configView   components.Menu
 	themeMenu    components.Menu
 	theme        *theme.Theme
 	width        int
@@ -36,7 +36,7 @@ func NewModel() *Model {
 	cfg := config.Load()
 	t := theme.New(cfg.Theme)
 
-	mainMenuItems := []string{"Imprimir PDF", "Configurar Cuenta", "Cambiar Theme", "Salir"}
+	mainMenuItems := []string{"Imprimir PDF", "Configuración de Impresión", "Configurar Cuenta", "Cambiar Theme", "Salir"}
 	themeMenuItems := []string{"Default", "Cadcc", "Anakena"}
 
 	ti := textinput.New()
@@ -44,10 +44,13 @@ func NewModel() *Model {
 	ti.Focus()
 	ti.CharLimit = 16
 	ti.SetValue(cfg.Account)
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(t.Selected)
+	ti.TextStyle = lipgloss.NewStyle().Foreground(t.Header)
 
 	return &Model{
-		currentView:  mainView,
-		mainMenu:     components.NewMenu(mainMenuItems, t),
+		currentView: mainView,
+		mainMenu:    components.NewMenu(mainMenuItems, t),
+
 		themeMenu:    components.NewMenu(themeMenuItems, t),
 		theme:        t,
 		accountInput: ti,
@@ -117,6 +120,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.theme = theme.New(selectedTheme)
 			m.mainMenu.SetTheme(m.theme)
 			m.themeMenu.SetTheme(m.theme)
+			// Todo: Muy engorroso, abstraer
+			m.accountInput.PromptStyle = lipgloss.NewStyle().Foreground(m.theme.Selected)
+			m.accountInput.TextStyle = lipgloss.NewStyle().Foreground(m.theme.Header)
 			m.mainMenu.Reset()
 			m.currentView = mainView
 		}
@@ -144,17 +150,25 @@ func (m *Model) View() string {
 	switch m.currentView {
 	case mainView:
 		view = m.mainMenu.View()
-	// case printView:
-	// 	view = m.mainMenu.View()
-	// case configView:
-	// 	view = m.mainMenu.View()
+	case printView:
+		view = m.mainMenu.View()
+	case configView:
+		view = m.mainMenu.View()
 	case accountView:
 		view = m.accountInput.View()
 	case themeView:
 		view = m.themeMenu.View()
 	}
 
-	content := lipgloss.JoinVertical(lipgloss.Left, header, view)
+	acc := config.Load().Account
+	if len(acc) < 3 {
+		acc = "Ingresa tu usuario DCC en \"Configurar Cuenta\""
+	} else {
+		acc = "Cuenta configurada: " + acc
+	}
+
+	accountText := lipgloss.NewStyle().Render(acc)
+	content := lipgloss.JoinVertical(lipgloss.Left, header, view, accountText)
 	centeredContent := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).Render(content)
 
 	return lipgloss.Place(
