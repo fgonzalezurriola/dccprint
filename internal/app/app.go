@@ -1,6 +1,7 @@
 package app
 
 import (
+	_ "embed"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -17,6 +18,15 @@ const (
 	accountView
 	themeView
 )
+
+const logo = `
+ ██████╗   ██████╗  ██████╗     ██████╗  ██████╗  ██╗ ███╗   ██╗ ████████╗
+ ██╔══██╗ ██╔════╝ ██╔════╝     ██╔══██╗ ██╔══██╗ ██║ ████╗  ██║ ╚══██╔══╝
+ ██║  ██║ ██║      ██║          ██████╔╝ ██████╔╝ ██║ ██╔██╗ ██║    ██║
+ ██║  ██║ ██║      ██║          ██╔═══╝  ██╔══██╗ ██║ ██║╚██╗██║    ██║
+ ██████╔╝ ╚██████╗ ╚██████╗     ██║      ██║  ██║ ██║ ██║ ╚████║    ██║
+ ╚═════╝   ╚═════╝  ╚═════╝     ╚═╝      ╚═╝  ╚═╝ ╚═╝ ╚═╝  ╚═══╝    ╚═╝
+`
 
 type viewState int
 
@@ -144,10 +154,14 @@ func (m *Model) View() string {
 	switch m.currentView {
 	case mainView:
 		view = m.mainMenu.View()
-	case themeView:
-		view = m.themeMenu.View()
+	// case printView:
+	// 	view = m.mainMenu.View()
+	// case configView:
+	// 	view = m.mainMenu.View()
 	case accountView:
 		view = m.accountInput.View()
+	case themeView:
+		view = m.themeMenu.View()
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, header, view)
@@ -162,10 +176,13 @@ func (m *Model) View() string {
 	)
 }
 
+//go:embed logo.txt
+var content []byte
+
 func (m *Model) renderHeader() string {
 	headerStyle := lipgloss.NewStyle().
-		Background(m.theme.Header).
-		Foreground(m.theme.Foreground).
+		Background(m.theme.Selected).
+		Foreground(m.theme.Header).
 		Padding(1, 20)
 
 	title := headerStyle.Render("DCC PRINT")
