@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -172,15 +174,17 @@ func (m *Model) View() string {
 		view = m.themeMenu.View()
 	}
 
-	acc := config.Load().Account
-	if len(acc) < 3 {
-		acc = "Ingresa tu usuario DCC en \"Configurar Cuenta\""
-	} else {
-		acc = "Cuenta configurada: " + acc
+	accInfo := config.Load().Account
+	accText := "Cuenta configurada: "
+	if len(accInfo) < 3 {
+		accInfo = "Configurar Cuenta"
+		accText = "Ingresa tu usuario DCC en "
 	}
 
-	accountText := lipgloss.NewStyle().Render(acc)
-	content := lipgloss.JoinVertical(lipgloss.Left, header, view, accountText)
+	accText = lipgloss.NewStyle().Foreground(m.theme.Selected).Render(accText)
+	accInfo = lipgloss.NewStyle().Foreground(m.theme.Header).Render(accInfo)
+	accRender := fmt.Sprintf("%s%s", accText, accInfo)
+	content := lipgloss.JoinVertical(lipgloss.Left, header, view, accRender)
 	centeredContent := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).Render(content)
 
 	return lipgloss.Place(

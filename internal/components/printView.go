@@ -1,6 +1,10 @@
 package components
 
 import (
+	"fmt"
+	"log"
+	"os"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/fgonzalezurriola/dccprint/internal/theme"
@@ -27,8 +31,13 @@ func (s PrintView) Init() tea.Cmd {
 }
 
 func (s PrintView) View() string {
+	var currDir, err = os.Getwd()
+	if err != nil {
+		log.Fatalf("Error in PrintView View(): %v", err)
+	}
+
 	if len(s.pdfs) == 0 {
-		return "No PDF files found in the current directory."
+		return fmt.Sprintf("PDFs no encontrados en %s", currDir)
 	}
 
 	view := ""
@@ -41,7 +50,7 @@ func (s PrintView) View() string {
 			textStyle = lipgloss.NewStyle().Foreground(s.theme.Selected)
 		}
 		view += lipgloss.NewStyle().Width(s.width).Render(
-			lipgloss.JoinHorizontal(lipgloss.Left,
+			lipgloss.JoinHorizontal(lipgloss.Center,
 				cursor,
 				" ",
 				textStyle.Render(pdf),
