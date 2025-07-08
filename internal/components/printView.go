@@ -40,7 +40,7 @@ func (s PrintView) View() string {
 		return fmt.Sprintf("PDFs no encontrados en %s", currDir)
 	}
 
-	view := ""
+	var lines []string
 	for i, pdf := range s.pdfs {
 		cursor := " "
 		textStyle := lipgloss.NewStyle().Foreground(s.theme.Unselected)
@@ -49,15 +49,14 @@ func (s PrintView) View() string {
 			cursor = lipgloss.NewStyle().Foreground(s.theme.Selected).Render(">")
 			textStyle = lipgloss.NewStyle().Foreground(s.theme.Selected)
 		}
-		view += lipgloss.NewStyle().Width(s.width).Render(
-			lipgloss.JoinHorizontal(lipgloss.Center,
-				cursor,
-				" ",
-				textStyle.Render(pdf),
-			),
-		) + "\n"
+		line := lipgloss.JoinHorizontal(lipgloss.Left,
+			cursor,
+			" ",
+			textStyle.Render(pdf),
+		)
+		lines = append(lines, line)
 	}
-	return view
+	return lipgloss.JoinVertical(lipgloss.Left, lines...)
 }
 
 func (s PrintView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
