@@ -8,7 +8,7 @@ import (
 )
 
 // Func to remove al Shell Scripts that starts with "printdcc_"
-func removeGeneratedScripts(dir string) error {
+func RemoveGeneratedScripts(dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return err
@@ -26,7 +26,7 @@ func removeGeneratedScripts(dir string) error {
 }
 
 // Func to retrieve all pdfs in the current dir
-func getPDFFiles() []string {
+func GetPDFFiles() []string {
 	var PDFs []string
 
 	currentDir, err := os.Getwd()

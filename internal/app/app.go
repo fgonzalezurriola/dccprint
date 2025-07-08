@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/fgonzalezurriola/dccprint/internal/components"
+	"github.com/fgonzalezurriola/dccprint/internal/components/scripts"
 	"github.com/fgonzalezurriola/dccprint/internal/config"
 	"github.com/fgonzalezurriola/dccprint/internal/theme"
 )
@@ -23,7 +24,7 @@ type viewState int
 type Model struct {
 	currentView  viewState
 	mainMenu     components.Menu
-	printView    components.Menu
+	printView    components.PrintView
 	configView   components.Menu
 	themeMenu    components.Menu
 	theme        *theme.Theme
@@ -48,9 +49,9 @@ func NewModel() *Model {
 	ti.TextStyle = lipgloss.NewStyle().Foreground(t.Header)
 
 	return &Model{
-		currentView: mainView,
-		mainMenu:    components.NewMenu(mainMenuItems, t),
-
+		currentView:  mainView,
+		mainMenu:     components.NewMenu(mainMenuItems, t),
+		printView:    components.NewPrintView(scripts.GetPDFFiles(), t),
 		themeMenu:    components.NewMenu(themeMenuItems, t),
 		theme:        t,
 		accountInput: ti,
@@ -71,6 +72,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.mainMenu.SetSize(msg.Width, msg.Height)
 		m.themeMenu.SetSize(msg.Width, msg.Height)
+		m.printView.SetSize(msg.Width, msg.Height)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -97,7 +99,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
 			switch m.mainMenu.SelectedItem() {
 			case "Imprimir PDF":
-				// Todo
+				m.currentView = printView
 			case "Configurar Cuenta":
 				m.currentView = accountView
 				m.accountInput.Focus()
@@ -107,6 +109,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "Salir":
 				return m, tea.Quit
 			}
+		}
+
+	case printView:
+		newSelector, selectorCmd := m.printView.Update(msg)
+		m.printView = newSelector.(components.PrintView)
+		cmd = selectorCmd
+
+		if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
+			// TODO
+			m.currentView = mainView
 		}
 
 	case themeView:
@@ -151,7 +163,7 @@ func (m *Model) View() string {
 	case mainView:
 		view = m.mainMenu.View()
 	case printView:
-		view = m.mainMenu.View()
+		view = m.printView.View()
 	case configView:
 		view = m.mainMenu.View()
 	case accountView:
