@@ -185,13 +185,6 @@ func (m *Model) View() string {
 	accInfo = lipgloss.NewStyle().Foreground(m.theme.Header).Render(accInfo)
 	accRender := fmt.Sprintf("%s%s", accText, accInfo)
 	content := lipgloss.JoinVertical(lipgloss.Left, header, view, accRender)
-	centeredContent := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).Render(content)
 
-	return lipgloss.Place(
-		m.width,
-		m.height,
-		lipgloss.Center,
-		lipgloss.Center,
-		centeredContent,
-	)
+	return lipgloss.NewStyle().Padding(1).Render(content)
 }

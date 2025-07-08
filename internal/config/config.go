@@ -6,6 +6,16 @@ import (
 	"path/filepath"
 )
 
+type Printer struct {
+	Name    string
+	Command string
+}
+
+var printers = map[int]Printer{
+	1: {"Salita", "lpr -P hp-335"},
+	2: {"Toqui", "lpr"},
+}
+
 type Config struct {
 	Theme   string `json:"theme"`
 	Account string `json:"account"`
