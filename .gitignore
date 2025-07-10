@@ -2,6 +2,9 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 *.pdf
 *.sh
+*.md
+*.MD
+!README.md
 # Binaries for programs and plugins
 *.exe
 *.exe~
