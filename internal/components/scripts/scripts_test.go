@@ -15,7 +15,7 @@ func TestRemoveGeneratedScripts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
-	err = removeGeneratedScripts(tempDir)
+	err = RemoveGeneratedScripts(tempDir)
 	if err != nil {
 		log.Fatalf("Error %v", err)
 	}

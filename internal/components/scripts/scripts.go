@@ -48,7 +48,7 @@ func GetPDFFiles() []string {
 	return PDFs
 }
 
-func createScript(filename string) {
+func CreateScript(filename string) {
 	basename := strings.TrimSuffix(filename, filepath.Ext(filename))
 	psname := basename + ".ps"
 

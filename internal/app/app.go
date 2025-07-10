@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/fgonzalezurriola/dccprint/internal/account"
 	"github.com/fgonzalezurriola/dccprint/internal/components"
 	"github.com/fgonzalezurriola/dccprint/internal/components/scripts"
 	"github.com/fgonzalezurriola/dccprint/internal/config"
@@ -24,15 +25,15 @@ const (
 type viewState int
 
 type Model struct {
-	currentView  viewState
-	mainMenu     components.Menu
-	printView    components.PrintView
-	configView   components.Menu
-	themeMenu    components.Menu
-	theme        *theme.Theme
-	width        int
-	height       int
-	accountInput textinput.Model
+	currentView    viewState
+	mainMenu       components.Menu
+	printView      components.PrintView
+	configView     components.Menu
+	themeMenu      components.Menu
+	theme          *theme.Theme
+	width          int
+	height         int
+	accountManager account.Manager
 }
 
 func NewModel() *Model {
@@ -51,12 +52,12 @@ func NewModel() *Model {
 	ti.TextStyle = lipgloss.NewStyle().Foreground(t.Header)
 
 	return &Model{
-		currentView:  mainView,
-		mainMenu:     components.NewMenu(mainMenuItems, t),
-		printView:    components.NewPrintView(scripts.GetPDFFiles(), t),
-		themeMenu:    components.NewMenu(themeMenuItems, t),
-		theme:        t,
-		accountInput: ti,
+		currentView:    mainView,
+		mainMenu:       components.NewMenu(mainMenuItems, t),
+		printView:      components.NewPrintView(scripts.GetPDFFiles(), t),
+		themeMenu:      components.NewMenu(themeMenuItems, t),
+		theme:          t,
+		accountManager: account.NewManager(t, cfg),
 	}
 }
 
@@ -104,7 +105,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentView = printView
 			case "Configurar Cuenta":
 				m.currentView = accountView
-				m.accountInput.Focus()
+				m.accountManager.AccountInput.Focus()
 			case "Cambiar Theme":
 				m.themeMenu.Reset()
 				m.currentView = themeView
@@ -135,21 +136,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mainMenu.SetTheme(m.theme)
 			m.themeMenu.SetTheme(m.theme)
 			// Todo: Muy engorroso, abstraer
-			m.accountInput.PromptStyle = lipgloss.NewStyle().Foreground(m.theme.Selected)
-			m.accountInput.TextStyle = lipgloss.NewStyle().Foreground(m.theme.Header)
+			m.accountManager.AccountInput.PromptStyle = lipgloss.NewStyle().Foreground(m.theme.Selected)
+			m.accountManager.AccountInput.TextStyle = lipgloss.NewStyle().Foreground(m.theme.Header)
 			m.mainMenu.Reset()
 			m.currentView = mainView
 		}
 
 	case accountView:
 		if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
-			account := m.accountInput.Value()
-			config.SaveAccount(account)
+			m.accountManager.SaveAccount()
 			m.mainMenu.Reset()
 			m.currentView = mainView
 		} else {
 			var inputCmd tea.Cmd
-			m.accountInput, inputCmd = m.accountInput.Update(msg)
+			m.accountManager.AccountInput, inputCmd = m.accountManager.AccountInput.Update(msg)
 			cmd = inputCmd
 		}
 	}
@@ -169,7 +169,7 @@ func (m *Model) View() string {
 	case configView:
 		view = m.mainMenu.View()
 	case accountView:
-		view = m.accountInput.View()
+		view = m.accountManager.AccountInput.View()
 	case themeView:
 		view = m.themeMenu.View()
 	}
