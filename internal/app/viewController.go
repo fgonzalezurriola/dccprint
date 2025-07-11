@@ -5,7 +5,8 @@ type ViewState int
 const (
 	MainView ViewState = iota
 	PrintView
-	ConfigView
+	PrinterView
+	ModeView
 	AccountView
 	ThemeView
 	SetupView

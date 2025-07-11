@@ -27,7 +27,6 @@ type Model struct {
 	accountManager account.Manager
 	width          int
 	height         int
-
 }
 
 // --- Component Initializers ---
@@ -49,14 +48,14 @@ func newAccountManager(t *theme.Theme, cfg config.Config) account.Manager {
 	return account.NewManager(t, cfg)
 }
 
-func newPrinterView(t *theme.Theme) components.Menu {
+func newPrinterView(t *theme.Theme) components.PrinterView {
 	printerMenuItems := []string{"Salita", "Toqui"}
-	return components.NewMenu(printerMenuItems, t)
+	return components.NewPrinterView(printerMenuItems, t)
 }
 
-func newModeView(t *theme.Theme) components.Menu {
+func newModeView(t *theme.Theme) components.ModeView {
 	modeMenuItems := []string{"Doble cara, Borde largo (Recomendado)", "Doble cara, Borde corto", "Simple (Reverso en blanco)"}
-	return components.NewMenu(modeMenuItems, t)
+	return components.NewModeView(modeMenuItems, t)
 }
 
 func newTextInput(ti textinput.Model, t *theme.Theme, cfg config.Config) {
@@ -138,7 +137,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-
 // --- Update helpers ---
 func (m *Model) updateMainView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	newMenu, menuCmd := m.mainMenu.Update(msg)
@@ -174,14 +172,24 @@ func (m *Model) updatePrintView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, selectorCmd
 }
 
-// After printerView the model should go to borderMode always
 func (m *Model) updatePrinterView(msg tea.Msg) (tea.Model, tea.Cmd) {
-	newMenu, menuCmd := m.PrinterView.Update(msg)
-	m.PrinterView = newMenu.(components.Menu)
+	newMenu, menuCmd := m.PrinterView.Menu.Update(msg)
+	m.PrinterView.Menu = newMenu.(components.Menu)
 	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
-		selectedPrinter := m.PrinterView.SelectedItem()
+		selectedPrinter := m.PrinterView.Menu.SelectedItem()
 		config.SavePrinter(selectedPrinter)
 		m.viewController.Set(ModeView)
+	}
+	return m, menuCmd
+}
+
+func (m *Model) updateModeView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	newMenu, menuCmd := m.ModeView.Menu.Update(msg)
+	m.ModeView.Menu = newMenu.(components.Menu)
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
+		selectedMode := m.ModeView.Menu.SelectedItem()
+		config.SaveMode(selectedMode)
+		m.viewController.Set(MainView)
 	}
 	return m, menuCmd
 }

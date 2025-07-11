@@ -21,11 +21,6 @@ var modes = map[int]ConfigItem{
 	2: {"Doble", "duplex"},
 }
 
-var borders = map[int]ConfigItem{
-	1: {"Corto", "duplex -l"},
-	2: {"Largo", "duplex"},
-}
-
 // Todo: support -dFirstPage= y -dLastPage= from postscript (or psselect -p5-10)
 // Todo: Consultar papel?
 type Config struct {
@@ -33,8 +28,6 @@ type Config struct {
 	Account        string `json:"account"`
 	Printer        string `json:"printer"`
 	Mode           string `json:"mode"`
-	Border         string `json:"border"`
-	SetupCompleted bool   `json:"setupCompleted"`
 }
 
 func configPath() (string, error) {
@@ -46,7 +39,7 @@ func configPath() (string, error) {
 }
 
 func Load() Config {
-	defaultConfig := Config{Theme: "Default", Account: "", Printer: "Toqui", Mode: "Doble", Border: "Largo"}
+	defaultConfig := Config{Theme: "Default", Account: "", Printer: "Salita", Mode: "Doble cara, Borde largo (Recomendado)"}
 	path, err := configPath()
 	if err != nil {
 		return defaultConfig
@@ -112,8 +105,4 @@ func SavePrinter(printer string) error {
 
 func SaveMode(mode string) error {
 	return updateConfig(func(cfg *Config) { cfg.Mode = mode })
-}
-
-func SaveBorder(border string) error {
-	return updateConfig(func(cfg *Config) { cfg.Border = border })
 }
