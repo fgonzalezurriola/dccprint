@@ -14,21 +14,13 @@ import (
 
 type viewState int
 
-type setupStep int
-
-const (
-	setupWelcome setupStep = iota
-	setupAccount
-	setupPrintConfig
-	setupConfirm
-)
-
 type Model struct {
 	config         config.Config
 	viewController *ViewController
 	mainMenu       components.Menu
 	PrintView      components.PrintView
-	ConfigView     components.Menu
+	PrinterView    components.PrinterView
+	ModeView       components.ModeView
 	themeMenu      components.Menu
 	theme          *theme.Theme
 	themeManager   *theme.Manager
@@ -57,29 +49,40 @@ func newAccountManager(t *theme.Theme, cfg config.Config) account.Manager {
 	return account.NewManager(t, cfg)
 }
 
-// --- Model ---
-func NewModel() *Model {
-	cfg := config.Load()
-	t := theme.New(cfg.Theme)
+func newPrinterView(t *theme.Theme) components.Menu {
+	printerMenuItems := []string{"Salita", "Toqui"}
+	return components.NewMenu(printerMenuItems, t)
+}
 
-	ti := textinput.New()
+func newModeView(t *theme.Theme) components.Menu {
+	modeMenuItems := []string{"Doble cara, Borde largo (Recomendado)", "Doble cara, Borde corto", "Simple (Reverso en blanco)"}
+	return components.NewMenu(modeMenuItems, t)
+}
+
+func newTextInput(ti textinput.Model, t *theme.Theme, cfg config.Config) {
 	ti.Placeholder = "Ingresa el nombre de cuenta (sin @)"
 	ti.Focus()
 	ti.CharLimit = 16
 	ti.SetValue(cfg.Account)
 	ti.PromptStyle = lipgloss.NewStyle().Foreground(t.Selected)
 	ti.TextStyle = lipgloss.NewStyle().Foreground(t.Header)
+}
 
+// --- Model ---
+func NewModel() *Model {
+	cfg := config.Load()
+	t := theme.New(cfg.Theme)
+	newTextInput(textinput.New(), t, cfg)
 	themeManager := theme.NewManager(cfg.Theme)
 	vc := NewViewController()
-	if !cfg.SetupCompleted {
-		vc.Set(SetupView)
-	}
+
 	return &Model{
 		config:         cfg,
 		viewController: vc,
 		mainMenu:       newMainMenu(t),
 		PrintView:      newPrintView(t),
+		PrinterView:    newPrinterView(t),
+		ModeView:       newModeView(t),
 		themeMenu:      newThemeMenu(t),
 		theme:          t,
 		themeManager:   themeManager,
@@ -91,7 +94,7 @@ func (m *Model) Init() tea.Cmd {
 	return nil
 }
 
-// --- Main Update ---
+// --- Main  ---
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Handle global messages first
 	switch msg := msg.(type) {
@@ -101,6 +104,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mainMenu.SetSize(msg.Width, msg.Height)
 		m.themeMenu.SetSize(msg.Width, msg.Height)
 		m.PrintView.SetSize(msg.Width, msg.Height)
+		m.PrinterView.SetSize(msg.Width, msg.Height)
+		m.ModeView.SetSize(msg.Width, msg.Height)
+
 	// Handle global keybindings
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -116,12 +122,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.viewController.Get() {
-	case SetupView:
-		return m.updateSetupView(msg)
 	case MainView:
 		return m.updateMainView(msg)
 	case PrintView:
 		return m.updatePrintView(msg)
+	case PrinterView:
+		return m.updatePrinterView(msg)
+	case ModeView:
+		return m.updateModeView(msg)
 	case ThemeView:
 		return m.updateThemeView(msg)
 	case AccountView:
@@ -141,6 +149,8 @@ func (m *Model) updateMainView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch m.mainMenu.SelectedItem() {
 		case "Imprimir PDF":
 			m.viewController.Set(PrintView)
+		case "Configuración de Impresión":
+			m.viewController.Set(PrinterView)
 		case "Configurar Cuenta":
 			m.viewController.Set(AccountView)
 			m.accountManager.AccountInput.Focus()
@@ -162,6 +172,18 @@ func (m *Model) updatePrintView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewController.Set(MainView)
 	}
 	return m, selectorCmd
+}
+
+// After printerView the model should go to borderMode always
+func (m *Model) updatePrinterView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	newMenu, menuCmd := m.PrinterView.Update(msg)
+	m.PrinterView = newMenu.(components.Menu)
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
+		selectedPrinter := m.PrinterView.SelectedItem()
+		config.SavePrinter(selectedPrinter)
+		m.viewController.Set(ModeView)
+	}
+	return m, menuCmd
 }
 
 func (m *Model) updateThemeView(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -200,14 +222,14 @@ func (m *Model) View() string {
 	var view string
 
 	switch m.viewController.Get() {
-	case SetupView:
-		view = m.viewSetup()
 	case MainView:
 		view = m.viewMain()
 	case PrintView:
 		view = m.viewPrint()
-	case ConfigView:
-		view = m.viewMain() // Todo
+	case PrinterView:
+		view = m.viewPrinter()
+	case ModeView:
+		view = m.viewMode()
 	case AccountView:
 		view = m.viewAccount()
 	case ThemeView:
@@ -240,4 +262,12 @@ func (m *Model) viewTheme() string {
 
 func (m *Model) viewAccount() string {
 	return m.accountManager.AccountInput.View()
+}
+
+func (m *Model) viewPrinter() string {
+	return m.PrinterView.View()
+}
+
+func (m *Model) viewMode() string {
+	return m.ModeView.View()
 }
