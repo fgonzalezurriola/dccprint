@@ -8,6 +8,7 @@ const (
 	PrinterView
 	ModeView
 	AccountView
+	FreshView
 	ThemeView
 	SetupView
 )

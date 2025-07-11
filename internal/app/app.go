@@ -25,6 +25,7 @@ type Model struct {
 	theme          *theme.Theme
 	themeManager   *theme.Manager
 	accountManager account.Manager
+	freshManager   account.FreshManager
 	width          int
 	height         int
 }
@@ -36,7 +37,7 @@ func newMainMenu(t *theme.Theme) components.Menu {
 }
 
 func newThemeMenu(t *theme.Theme) components.Menu {
-	themeMenuItems := []string{"Default", "Cadcc", "Anakena"}
+	themeMenuItems := []string{"Default", "Dcc...", "Anakena"}
 	return components.NewMenu(themeMenuItems, t)
 }
 
@@ -75,7 +76,7 @@ func NewModel() *Model {
 	themeManager := theme.NewManager(cfg.Theme)
 	vc := NewViewController()
 
-	return &Model{
+	model := &Model{
 		config:         cfg,
 		viewController: vc,
 		mainMenu:       newMainMenu(t),
@@ -86,7 +87,14 @@ func NewModel() *Model {
 		theme:          t,
 		themeManager:   themeManager,
 		accountManager: newAccountManager(t, cfg),
+		freshManager:   account.NewFreshManager(t),
 	}
+
+	if cfg.Account == "" {
+		model.viewController.Set(FreshView)
+	}
+
+	return model
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -133,6 +141,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateThemeView(msg)
 	case AccountView:
 		return m.updateAccountView(msg)
+	case FreshView:
+		return m.updateFreshView(msg)
 	}
 	return m, nil
 }
@@ -242,6 +252,8 @@ func (m *Model) View() string {
 		view = m.viewAccount()
 	case ThemeView:
 		view = m.viewTheme()
+	case FreshView:
+		view = m.viewFreshView()
 	}
 	content := lipgloss.JoinVertical(lipgloss.Left, header, view)
 	centeredContent := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).Render(content)
@@ -278,4 +290,20 @@ func (m *Model) viewPrinter() string {
 
 func (m *Model) viewMode() string {
 	return m.ModeView.View()
+}
+
+func (m *Model) updateFreshView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
+		m.freshManager.SaveAccount()
+		m.viewController.Set(PrinterView)
+		return m, nil
+	} else {
+		var inputCmd tea.Cmd
+		m.freshManager.AccountInput, inputCmd = m.freshManager.AccountInput.Update(msg)
+		return m, inputCmd
+	}
+}
+
+func (m *Model) viewFreshView() string {
+	return m.freshManager.View()
 }
