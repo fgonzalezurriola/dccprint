@@ -15,14 +15,14 @@ type Theme struct {
 
 var themes = map[string]*Theme{
 	"Default": {
-		Selected:   lipgloss.Color("212"), // Pink
-		Unselected: lipgloss.Color("240"), // Gray
+		Selected:   lipgloss.Color("#ec488cff"), // Pink
+		Unselected: lipgloss.Color("#9b1458ff"), // Gray
 		Foreground: lipgloss.Color("252"), // Light Gray
 		Background: lipgloss.Color("235"), // Dark Gray
 		Border:     lipgloss.Color("238"), // Darker Gray
-		Header:     lipgloss.Color("212"), // Pink
-		Footer:     lipgloss.Color("212"), // Pink
-		Accent:     lipgloss.Color("86"),  // Green
+		Header:     lipgloss.Color("#c2156bff"), // Pink
+		Footer:     lipgloss.Color("#c2156bff"), // Pink
+		Accent:     lipgloss.Color("ffffff"),
 	},
 	"Cadcc": {
 		Selected:   lipgloss.Color("32"),  // Blue

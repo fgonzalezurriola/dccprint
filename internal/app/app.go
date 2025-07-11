@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -16,6 +14,15 @@ import (
 
 type viewState int
 
+type setupStep int
+
+const (
+	setupWelcome setupStep = iota
+	setupAccount
+	setupPrintConfig
+	setupConfirm
+)
+
 type Model struct {
 	config         config.Config
 	viewController *ViewController
@@ -28,6 +35,13 @@ type Model struct {
 	width          int
 	height         int
 	accountManager account.Manager
+
+	// Setup state
+	inSetup        bool
+	setupStep      setupStep
+	setupAccountIn textinput.Model
+	setupConfigV   *components.ConfigView
+	setupDone      bool
 }
 
 // --- Component Initializers ---
@@ -63,9 +77,13 @@ func NewModel() *Model {
 	ti.TextStyle = lipgloss.NewStyle().Foreground(t.Header)
 
 	themeManager := theme.NewManager(cfg.Theme)
+	vc := NewViewController()
+	if !cfg.SetupCompleted {
+		vc.Set(SetupView)
+	}
 	return &Model{
 		config:         cfg,
-		viewController: NewViewController(),
+		viewController: vc,
 		mainMenu:       newMainMenu(t),
 		PrintView:      newPrintView(t),
 		themeMenu:      newThemeMenu(t),
@@ -89,10 +107,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mainMenu.SetSize(msg.Width, msg.Height)
 		m.themeMenu.SetSize(msg.Width, msg.Height)
 		m.PrintView.SetSize(msg.Width, msg.Height)
+		if m.setupConfigV != nil {
+			m.setupConfigV.SetSize(msg.Width, msg.Height)
+		}
 		return m, nil
 
+	// Handle global keybindings
 	case tea.KeyMsg:
-		// Handle global keybindings
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -106,6 +127,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.viewController.Get() {
+	case SetupView:
+		return m.updateSetupView(msg)
 	case MainView:
 		return m.updateMainView(msg)
 	case PrintView:
@@ -114,6 +137,66 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateThemeView(msg)
 	case AccountView:
 		return m.updateAccountView(msg)
+	}
+	return m, nil
+}
+
+// --- Setup View Update ---
+func (m *Model) updateSetupView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if !m.inSetup {
+		m.inSetup = true
+		m.setupStep = setupWelcome
+		m.setupAccountIn = m.accountManager.AccountInput
+		m.setupConfigV = components.NewConfigView(m.theme)
+		m.setupConfigV.SetSize(m.width, m.height)
+		return m, nil
+	}
+
+	switch m.setupStep {
+	case setupWelcome:
+		if key, ok := msg.(tea.KeyMsg); ok && (key.String() == "enter" || key.String() == " ") {
+			m.setupStep = setupAccount
+			return m, nil
+		}
+		return m, nil
+	case setupAccount:
+		var inputCmd tea.Cmd
+		m.setupAccountIn, inputCmd = m.setupAccountIn.Update(msg)
+		if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
+			account := m.setupAccountIn.Value()
+			// Empty account verification (dcc accounts are exactly 8 chars)
+			if len(account) < 1 {
+				return m, nil
+			}
+			m.config.Account = account
+			_ = config.SaveAccount(account)
+			m.setupStep = setupPrintConfig
+			return m, nil
+		}
+		return m, inputCmd
+	case setupPrintConfig:
+		newV, cmd := m.setupConfigV.Update(msg)
+		m.setupConfigV = newV.(*components.ConfigView)
+		if cmd != nil {
+			msgResult := cmd()
+			if _, ok := msgResult.(components.ConfigFinishedMsg); ok {
+				// Guardar config actualizada
+				m.config = config.Load() // Recarga config con los cambios
+				m.setupStep = setupConfirm
+				return m, nil
+			}
+			return m, cmd
+		}
+		return m, nil
+	case setupConfirm:
+		if key, ok := msg.(tea.KeyMsg); ok && (key.String() == "enter" || key.String() == " ") {
+			m.config.SetupCompleted = true
+			_ = config.SaveConfig(m.config) // Guardar toda la config, incluyendo el flag
+			m.inSetup = false
+			m.viewController.Set(MainView)
+			return m, nil
+		}
+		return m, nil
 	}
 	return m, nil
 }
@@ -187,6 +270,8 @@ func (m *Model) View() string {
 	var view string
 
 	switch m.viewController.Get() {
+	case SetupView:
+		view = m.viewSetup()
 	case MainView:
 		view = m.viewMain()
 	case PrintView:
@@ -198,18 +283,7 @@ func (m *Model) View() string {
 	case ThemeView:
 		view = m.viewTheme()
 	}
-
-	accInfo := m.config.Account
-	accText := "Cuenta configurada: "
-	if len(accInfo) < 3 {
-		accInfo = "Configurar Cuenta"
-		accText = "Ingresa tu usuario DCC en "
-	}
-
-	accText = lipgloss.NewStyle().Foreground(m.theme.Selected).Render(accText)
-	accInfo = lipgloss.NewStyle().Foreground(m.theme.Header).Render(accInfo)
-	accRender := fmt.Sprintf("%s%s", accText, accInfo)
-	content := lipgloss.JoinVertical(lipgloss.Left, header, view, accRender)
+	content := lipgloss.JoinVertical(lipgloss.Left, header, view)
 	centeredContent := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).Render(content)
 
 	return lipgloss.Place(
@@ -219,6 +293,43 @@ func (m *Model) View() string {
 		lipgloss.Center,
 		centeredContent,
 	)
+}
+
+// --- Setup View Render ---
+func (m *Model) viewSetup() string {
+	headerStyle := lipgloss.NewStyle().Foreground(m.theme.Header).Bold(true)
+	descStyle := lipgloss.NewStyle().Foreground(m.theme.Selected)
+	promptStyle := lipgloss.NewStyle().Foreground(m.theme.Unselected)
+	stepStyle := lipgloss.NewStyle().Foreground(m.theme.Selected).Bold(true)
+
+	switch m.setupStep {
+	case setupWelcome:
+		header := headerStyle.Render("Bienvenido a DCCPrint")
+		desc := descStyle.Render("Continuaremos con la configuración inicial (se puede cambiar a futuro)")
+		prompt := promptStyle.Render("[Presiona Enter para continuar]")
+		return lipgloss.JoinVertical(lipgloss.Left, "", header, "", desc, "", prompt)
+	case setupAccount:
+		step := stepStyle.Render("Paso 1: Configura tu usuario")
+		prompt := promptStyle.Render("[Enter para continuar]")
+		return lipgloss.JoinVertical(lipgloss.Left, "", step, m.setupAccountIn.View(), "", prompt)
+	case setupPrintConfig:
+		step := stepStyle.Render("Paso 2: Configura la impresión")
+		// Detectar si el modo seleccionado es Simple
+		mode := m.config.Mode
+		if mode == "Simple" {
+			prompt := promptStyle.Render("[Enter para finalizar]")
+			return lipgloss.JoinVertical(lipgloss.Left, "", step, m.setupConfigV.View(), "", prompt)
+		}
+		prompt := promptStyle.Render("[Enter para continuar]")
+		return lipgloss.JoinVertical(lipgloss.Left, "", step, m.setupConfigV.View(), "", prompt)
+	case setupConfirm:
+		done := headerStyle.Render("¡Listo!")
+		desc := descStyle.Render("Tu configuración ha sido guardada.")
+		prompt := promptStyle.Render("[Presiona Enter para ir al menú principal]")
+		return lipgloss.JoinVertical(lipgloss.Left, "", done, "", desc, "", prompt)
+	default:
+		return ""
+	}
 }
 
 // --- View helpers ---

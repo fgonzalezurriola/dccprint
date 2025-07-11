@@ -29,11 +29,12 @@ var borders = map[int]ConfigItem{
 // Todo: support -dFirstPage= y -dLastPage= from postscript (or psselect -p5-10)
 // Todo: Consultar papel?
 type Config struct {
-	Theme   string `json:"theme"`
-	Account string `json:"account"`
-	Printer string `json:"printer"`
-	Mode    string `json:"mode"`
-	Border  string `json:"border"`
+	Theme          string `json:"theme"`
+	Account        string `json:"account"`
+	Printer        string `json:"printer"`
+	Mode           string `json:"mode"`
+	Border         string `json:"border"`
+	SetupCompleted bool   `json:"setupCompleted"`
 }
 
 func configPath() (string, error) {
@@ -90,6 +91,10 @@ func save(cfg Config) error {
 func updateConfig(updater func(cfg *Config)) error {
 	cfg := Load()
 	updater(&cfg)
+	return save(cfg)
+}
+
+func SaveConfig(cfg Config) error {
 	return save(cfg)
 }
 

@@ -8,6 +8,7 @@ const (
 	ConfigView
 	AccountView
 	ThemeView
+	SetupView
 )
 
 type ViewController struct {

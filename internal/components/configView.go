@@ -8,7 +8,6 @@ import (
 	"github.com/fgonzalezurriola/dccprint/internal/theme"
 )
 
-// ConfigFinishedMsg es un mensaje para indicar que el flujo de configuración ha terminado.
 type ConfigFinishedMsg struct{}
 
 type configStep int
