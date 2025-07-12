@@ -10,18 +10,21 @@ version: 2
 
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
-    # you may remove this if you don't need go generate
-    - go generate ./...
 
 builds:
-  - env:
+  - id: "dccprint"
+    main: ./cmd/dccprint/main.go
+    binary: dccprint
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
+    goarch:
+      - amd64
+      - "386"
+      - arm64
 
 archives:
   - formats: [tar.gz]
@@ -33,10 +36,6 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
-    format_overrides:
-      - goos: windows
-        formats: [zip]
 
 changelog:
   sort: asc
@@ -51,3 +50,25 @@ release:
     ---
 
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+
+signs:
+  - artifacts: all
+    args:
+      [
+        "--batch",
+        "-u",
+        "EA1ED0B0AD49F5BEB57F81FBBE4BD8E2A2421B7D",
+        "--pinentry-mode",
+        "loopback",
+      ]
+
+brews:
+  - name: dccprint
+    homepage: "https://github.com/fgonzalezurriola/dccprint"
+
+    description: "Una herramienta TUI paraa imprimir archivos en el DCC."
+    install: |
+      bin.install "dccprint"
+    repository:
+      owner: fgonzalezurriola
+      name: homebrew-tap
