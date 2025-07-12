@@ -51,18 +51,6 @@ release:
 
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
 
-signs:
-  - artifacts: all
-    args:
-      [
-        "--detach-sign",
-        "--batch",
-        "-u",
-        "EA1ED0B0AD49F5BEB57F81FBBE4BD8E2A2421B7D",
-        "--pinentry-mode",
-        "loopback",
-      ]
-
 brews:
   - name: dccprint
     homepage: "https://github.com/fgonzalezurriola/dccprint"
