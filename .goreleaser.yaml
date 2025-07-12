@@ -55,6 +55,7 @@ signs:
   - artifacts: all
     args:
       [
+        "--detach-sign",
         "--batch",
         "-u",
         "EA1ED0B0AD49F5BEB57F81FBBE4BD8E2A2421B7D",
