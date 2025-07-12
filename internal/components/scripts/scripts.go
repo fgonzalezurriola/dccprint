@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/fgonzalezurriola/dccprint/internal/config"
 )
 
 // Func to remove al Shell Scripts that starts with "printdcc_"
@@ -48,23 +50,14 @@ func GetPDFFiles() []string {
 	return PDFs
 }
 
-func CreateScript(filename string) {
+// Func to create the main feature in order to print
+func CreateScript(filename string) (string, error) {
 	basename := strings.TrimSuffix(filename, filepath.Ext(filename))
 	psname := basename + ".ps"
-
-	// var printer string
-	// if m.printConfig.Location == 1 {
-	// 	printer = "hp-335"
-	// } else {
-	// 	printer = "hp"
-	// }
-
-	// var lprCommand string
-	// if m.printConfig.Copies > 1 {
-	// 	lprCommand = fmt.Sprintf("duplex %q | lpr -P %s -#%d", psname, printer, m.printConfig.Copies)
-	// } else {
-	// 	lprCommand = fmt.Sprintf("duplex %q | lpr -P %s", psname, printer)
-	// }
+	cfg := config.Load()
+	username := cfg.Account
+	printer := cfg.Printer
+	mode := cfg.Mode
 
 	scriptContent := `#!usr/bin/env bash
 ORANGE='\033[38;5;208m'
@@ -84,26 +77,64 @@ echo -e "${NC}"
 
 echo '==============================================================='
 echo 'DCC PRINT - SCRIPT GENERADO'
-echo 'Solo falta ingresar dos veces tu contraseña cuenta anakena para imprimir'
+echo 'Este script generado:'
+echo 'Con SSH se conecta a Anakena con tu cuenta, pidiendo tu contraseña'
+echo 'Con SCP el archivo en formato .ps (postscript)'
+echo 'Usa el comando para imprimir según la configuración seleccionada'
+echo 'A continuación ingresa tu contraseña para ingresar por SSH'
 echo '==============================================================='
 
 `
 	scriptContent += fmt.Sprintf("echo '1. Subiendo archivo %s...\n", filename)
-	// scriptContent += fmt.Sprintf("scp %q %s@anakena.dcc.uchile.cl:~\n\n", filename, m.userConfig.Username)
-
+	scriptContent += fmt.Sprintf("scp %q %s@anakena.dcc.uchile.cl:~\n\n", filename, username)
 	scriptContent += "echo '2. Conectando a anakena y ejecutando comandos...\n"
-	// scriptContent += fmt.Sprintf("ssh %s@anakena.dcc.uchile.cl << 'EOF'\n", m.userConfig.Username)
+	scriptContent += fmt.Sprintf("ssh %s@anakena.dcc.uchile.cl << 'EOF'\n", username)
 	scriptContent += fmt.Sprintf("pdf2ps %q %q\n", filename, psname)
-	// scriptContent += lprCommand + "\n"
-	// scriptContent += fmt.Sprintf("lpq -P %s\n", printer)
-	scriptContent += "papel\n"
-	scriptContent += "EOF\n\n"
-	scriptContent += `echo -e "${GREEN} IMPRESION COMPLETADA!${NC}"`
-	scriptContent += `echo -e "Recuerda que puedes usar ssh usuario@dcc.anakena.uchile.cl y el comando papel para ver cuantas impresiones te quedan. El papel se actualiza después de que termina la impresión en curso."`
-	scriptPath := "print-" + basename + ".sh"
-	err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
-	if err != nil {
-		return
-	}
 
+    var printCommand string
+    
+    switch printer {
+	case "Toqui":
+        switch mode {
+		case "Simple (Reverso en blanco)":
+            printCommand = fmt.Sprintf("lpr %s", psname)
+        case "Doble cara, Borde largo (Recomendado)":
+            printCommand = fmt.Sprintf("duplex %s | lpr", psname)
+        case "Doble cara, Borde corto":
+            printCommand = fmt.Sprintf("duplex -l %s | lpr", psname)
+        }
+    case "Salita":
+        switch mode {
+		case "Simple (Reverso en blanco)":
+            printCommand = fmt.Sprintf("lpr -P hp-335 %s", psname)
+        case "Doble cara, Borde largo (Recomendado)":
+            printCommand = fmt.Sprintf("duplex %s | lpr -P hp-335", psname)
+        case "Doble cara, Borde corto":
+            printCommand = fmt.Sprintf("duplex -l %s | lpr -P hp-335", psname)
+        }
+    }
+    
+    scriptContent += printCommand + "\n"
+    
+    // Output verifier
+    switch printer {
+	case "Salita":
+        scriptContent += "lpq -P hp-335\n"
+    case "Toqui":
+        scriptContent += "lpq\n"
+    }
+    
+    scriptContent += "papel\n"
+    scriptContent += "EOF\n\n"
+    scriptContent += `echo -e "${GREEN}IMPRESION COMPLETADA!${NC}"`
+    scriptContent += "\n"
+    scriptContent += `echo -e "Recuerda: usa 'ssh usuario@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes."`
+    
+    scriptPath := "print-" + basename + ".sh"
+    err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+    if err != nil {
+        return "", fmt.Errorf("error escribiendo archivo: %w", err)
+    }
+    
+    return scriptPath, nil
 }
