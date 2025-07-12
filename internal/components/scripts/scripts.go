@@ -62,7 +62,7 @@ func CreateScript(filename string) (string, error) {
 	printer := cfg.Printer
 	mode := cfg.Mode
 
-	scriptContent := `#!usr/bin/env bash
+	scriptContent := `#!/usr/bin/env bash
 ORANGE='\033[38;5;208m'
 GREEN='\033[0;32m'
 NC='\033[0m'
@@ -80,7 +80,7 @@ echo -e "${NC}"
 
 echo '==============================================================='
 echo 'DCC PRINT - SCRIPT GENERADO'
-echo 'Este script generado:'
+echo 'Este script generado:'	
 echo 'Con SSH se conecta a Anakena con tu cuenta, pidiendo tu contraseña'
 echo 'Con SCP el archivo en formato .ps (postscript)'
 echo 'Usa el comando para imprimir según la configuración seleccionada'

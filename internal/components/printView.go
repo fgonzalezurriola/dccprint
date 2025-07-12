@@ -11,12 +11,13 @@ import (
 )
 
 type PrintView struct {
-	pdfs         []string
-	cursor       int
-	selectedItem string
-	theme        *theme.Theme
-	width        int
-	height       int
+	pdfs          []string
+	cursor        int
+	selectedItem  string
+	theme         *theme.Theme
+	width         int
+	height        int
+	StatusMessage string
 }
 
 func NewPrintView(pdfs []string, theme *theme.Theme) PrintView {
@@ -41,6 +42,10 @@ func (s PrintView) View() string {
 	}
 
 	var lines []string
+	if s.StatusMessage != "" {
+		msgStyle := lipgloss.NewStyle().Foreground(s.theme.Selected).Bold(true)
+		lines = append(lines, msgStyle.Render(s.StatusMessage))
+	}
 	for i, pdf := range s.pdfs {
 		cursor := " "
 		textStyle := lipgloss.NewStyle().Foreground(s.theme.Unselected)

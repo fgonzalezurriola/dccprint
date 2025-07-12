@@ -31,6 +31,7 @@ type Model struct {
 	freshManager   account.FreshManager
 	width          int
 	height         int
+	printCompleted bool
 }
 
 // --- Component Initializers ---
@@ -176,38 +177,43 @@ func (m *Model) updateMainView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) updatePrintView(msg tea.Msg) (tea.Model, tea.Cmd) {
-    newSelector, selectorCmd := m.PrintView.Update(msg)
-    m.PrintView = newSelector.(components.PrintView)
-    
-    if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
-        filename := m.PrintView.SelectedItem()
-        
-        scriptName, err := scripts.CreateScript(filename)
+	newSelector, selectorCmd := m.PrintView.Update(msg)
+	m.PrintView = newSelector.(components.PrintView)
+
+	// Meanwhile printCompleted is active, just the view is shown
+	if m.printCompleted {
+		if key, ok := msg.(tea.KeyMsg); ok && (key.String() == "enter" || key.String() == "q" || key.String() == "ctrl+c") {
+			return m, tea.Quit
+		}
+		return m, nil
+	}
+
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
+		filename := m.PrintView.SelectedItem()
+		scriptName, err := scripts.CreateScript(filename)
 		if err != nil {
 			log.Fatalf("Error creando script: %v\n", err)
 		}
-        
-        command := fmt.Sprintf("./%s", scriptName)
-        if err := scripts.CopyToClipboard(command); err != nil {
-            fmt.Printf("Error copiando al clipboard: %v\n", err)
-        }
+		command := fmt.Sprintf("./%s", scriptName)
+		if err := scripts.CopyToClipboard(command); err != nil {
+			m.PrintView.StatusMessage = fmt.Sprintf("Error copiando al clipboard: %v", err)
+		} else {
+			m.PrintView.StatusMessage = "¡Script generado exitosamente!\n" +
+				"Comando copiado al clipboard: " + command +
+				"\nInstrucciones:\n" +
+				"1. Ctrl+Shift+V para pegar el comando\n" +
+				"2. Enter para ejecutar\n" +
+				"3. Ingresa tu contraseña SSH cuando se solicite\n" +
+				"4. El archivo se enviará a la impresora\n" +
+				"5. ¡Esperar tu impresión!\n" +
+				"\nPresiona Enter, q o Ctrl+C para salir."
+		}
+		m.printCompleted = true
+		return m, nil
+	}
 
-        
-        fmt.Printf("\nScript generado exitosamente!")
-        fmt.Printf("Comando copiado al clipboard: %s\n", command)
-        fmt.Printf("\nInstrucciones:")
-        fmt.Printf("\n1. Ctrl+Shift+V para pegar el comando")
-        fmt.Printf("\n2. Enter para ejecutar")
-        fmt.Printf("\n3. Ingresa tu contraseña SSH cuando se solicite")
-        fmt.Printf("\n4. El archivo se enviará a la impresora")
-        fmt.Printf("\n5. Esperar tu impresión!")
-        
-        return m, tea.Quit
-    }
-    
-    return m, selectorCmd
+	return m, selectorCmd
 }
-
 func (m *Model) updatePrinterView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	newMenu, menuCmd := m.PrinterView.Menu.Update(msg)
 	m.PrinterView.Menu = newMenu.(components.Menu)
