@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fgonzalezurriola/dccprint/internal/config"
 )
 
@@ -137,4 +140,38 @@ echo '==============================================================='
     }
     
     return scriptPath, nil
+}
+
+func CopyToClipboard(text string) error {
+    var cmd *exec.Cmd
+    
+    switch runtime.GOOS {
+    case "windows":
+        cmd = exec.Command("cmd", "/c", "clip")
+    case "darwin":
+        cmd = exec.Command("pbcopy")
+    case "linux":
+        cmd = exec.Command("xclip", "-selection", "clipboard")
+    }
+    
+    cmd.Stdin = strings.NewReader(text)
+    return cmd.Run()
+}
+
+func PrintSuccessMessage(scriptName string) tea.Cmd {
+    return func() tea.Msg {
+        fmt.Print("\n\n")
+        fmt.Println("Script generado exitosamente!")
+        fmt.Printf("Comando copiado: ./%s\n", scriptName)
+        fmt.Print("\n")
+        fmt.Println("Instrucciones:")
+        fmt.Println("1. Ctrl+Shift+V para pegar")
+        fmt.Println("2. Enter para ejecutar")
+        fmt.Println("3. Ingresa contraseña SSH")
+        fmt.Println("4. Archivo se enviará a impresora")
+        fmt.Print("\n")
+        fmt.Println("Listo para imprimir!")
+        fmt.Print("\n")
+        return nil
+    }
 }

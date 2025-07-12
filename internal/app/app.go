@@ -1,6 +1,9 @@
 package app
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -173,13 +176,36 @@ func (m *Model) updateMainView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) updatePrintView(msg tea.Msg) (tea.Model, tea.Cmd) {
-	newSelector, selectorCmd := m.PrintView.Update(msg)
-	m.PrintView = newSelector.(components.PrintView)
-	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
-		// TODO: lógica de impresión
-		m.viewController.Set(MainView)
-	}
-	return m, selectorCmd
+    newSelector, selectorCmd := m.PrintView.Update(msg)
+    m.PrintView = newSelector.(components.PrintView)
+    
+    if key, ok := msg.(tea.KeyMsg); ok && key.String() == "enter" {
+        filename := m.PrintView.SelectedItem()
+        
+        scriptName, err := scripts.CreateScript(filename)
+		if err != nil {
+			log.Fatalf("Error creando script: %v\n", err)
+		}
+        
+        command := fmt.Sprintf("./%s", scriptName)
+        if err := scripts.CopyToClipboard(command); err != nil {
+            fmt.Printf("Error copiando al clipboard: %v\n", err)
+        }
+
+        
+        fmt.Printf("\nScript generado exitosamente!")
+        fmt.Printf("Comando copiado al clipboard: %s\n", command)
+        fmt.Printf("\nInstrucciones:")
+        fmt.Printf("\n1. Ctrl+Shift+V para pegar el comando")
+        fmt.Printf("\n2. Enter para ejecutar")
+        fmt.Printf("\n3. Ingresa tu contraseña SSH cuando se solicite")
+        fmt.Printf("\n4. El archivo se enviará a la impresora")
+        fmt.Printf("\n5. Esperar tu impresión!")
+        
+        return m, tea.Quit
+    }
+    
+    return m, selectorCmd
 }
 
 func (m *Model) updatePrinterView(msg tea.Msg) (tea.Model, tea.Cmd) {
