@@ -1,22 +1,31 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+
+# The lines below are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/need to use them.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
 version: 2
+
 before:
   hooks:
+    # You may remove this if you don't use go modules.
     - go mod tidy
+    # you may remove this if you don't need go generate
+    - go generate ./...
+
 builds:
   - env:
       - CGO_ENABLED=0
     goos:
       - linux
+      - windows
       - darwin
-    goarch:
-      - amd64
-      - arm64
-    binary: dccprint
-    ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -24,35 +33,10 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    files:
-      - README.md
-      - LICENSE*
-
-# APT
-nfpms:
-  - id: dccprint
-    package_name: dccprint
-    file_name_template: "{{ .ConventionalFileName }}"
-    vendor: "fgonzalezurriola"
-    homepage: "https://github.com/fgonzalezurriola/dccprint"
-    maintainer: "Tu Nombre <tu@email.com>"
-    description: "Herramienta de línea de comandos para impresión y procesamiento de documentos DCC"
-    license: "GPL-3.0"
-    formats:
-      - deb
-      - rpm
-    bindir: /usr/bin
-    contents:
-      - src: ./README.md
-        dst: /usr/share/doc/dccprint/README.md
-      - src: ./LICENSE
-        dst: /usr/share/doc/dccprint/LICENSE
-
-checksum:
-  name_template: "checksums.txt"
-
-snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
 
 changelog:
   sort: asc
@@ -61,24 +45,9 @@ changelog:
       - "^docs:"
       - "^test:"
 
-brews:
-  - name: dccprint
-    repository:
-      owner: fgonzalezurriola
-      name: homebrew-tap
-      branch: main
-    homepage: "https://github.com/fgonzalezurriola/dccprint"
-    description: "Herramienta de línea de comandos para impresión y procesamiento de documentos DCC"
-    license: "GPL-3.0"
-    commit_author:
-      name: goreleaser
-      email: goreleaser@users.noreply.github.com
-    install: |
-      bin.install "dccprint"
-    test: |
-      system "#{bin}/dccprint --version"
-
 release:
-  draft: false
-  prerelease: auto
-  name_template: "{{.ProjectName}}-v{{.Version}}"
+  footer: >-
+
+    ---
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
