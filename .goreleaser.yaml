@@ -44,6 +44,7 @@ changelog:
       - "^test:"
 
 release:
+  replace_existing_draft: true
   footer: >-
 
     ---
