@@ -51,6 +51,47 @@ release:
 
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
 
+nfpms:
+  - id: dccprint
+    package_name: dccprint
+    vendor: "fgonzalezurriola"
+    homepage: "https://github.com/fgonzalezurriola/dccprint"
+    maintainer: "fgonzalezurriola <fgonzalezurriola@gmail.com>"
+    description: "Una herramienta TUI para imprimir archivos en el DCC."
+    license: "GPL-3.0-or-later"
+    formats:
+      - deb
+      - rpm
+      - apk
+    dependencies:
+      - glibc
+    overrides:
+      deb:
+        dependencies:
+          - libc6
+      rpm:
+        dependencies:
+          - glibc
+      apk:
+        dependencies:
+          - musl
+    contents:
+      - src: LICENSE
+        dst: /usr/share/licenses/dccprint/LICENSE
+        file_info:
+          mode: 0644
+      - src: README.md
+        dst: /usr/share/doc/dccprint/README.md
+        file_info:
+          mode: 0644
+    rpm:
+      summary: "Herramienta TUI para imprimir archivos en el DCC"
+      group: "Applications/System"
+      packager: "fgonzalezurriola <fgonzalezurriola@gmail.com>"
+    deb:
+      fields:
+        Bugs: "https://github.com/fgonzalezurriola/dccprint/issues"
+
 brews:
   - name: dccprint
     homepage: "https://github.com/fgonzalezurriola/dccprint"
