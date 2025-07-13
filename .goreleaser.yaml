@@ -6,7 +6,7 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
-version: 2
+version: 1
 
 before:
   hooks:
@@ -27,7 +27,7 @@ builds:
       - arm64
 
 archives:
-  - formats: [tar.gz]
+  - format: tar.gz
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -62,16 +62,17 @@ brews:
       name: homebrew-tap
 
 aurs:
-  - name: dccprint-bin
-    git_url: "ssh://aur@aur.archlinux.org/dccprint-bin.git"
+  - name: dccprint
+    git_url: "ssh://aur@aur.archlinux.org/dccprint.git"
     homepage: "https://github.com/fgonzalezurriola/dccprint"
     description: "Una herramienta TUI para imprimir archivos en el DCC."
     license: "GPL-3.0-or-later"
     private_key: "{{ .Env.AUR_DCCPRINT_KEY }}"
     package: |-
+      pkgbase=dccprint
       install -Dm755 "./dccprint" "${pkgdir}/usr/bin/dccprint"
-      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/dccprint-bin/LICENSE"
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/dccprint/LICENSE"
     commit_author:
       name: fgonzalezurriola
-      email: fgonzalezurriola@gmail.com # <- Usa tu email
+      email: fgonzalezurriola@gmail.com
     commit_msg_template: "Update PKGBUILD to v{{ .Version }}"
