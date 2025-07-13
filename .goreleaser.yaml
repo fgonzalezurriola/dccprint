@@ -28,7 +28,6 @@ builds:
 
 archives:
   - formats: [tar.gz]
-    # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -61,3 +60,18 @@ brews:
     repository:
       owner: fgonzalezurriola
       name: homebrew-tap
+
+aurs:
+  - name: dccprint-bin
+    git_url: "ssh://aur@aur.archlinux.org/dccprint-bin.git"
+    homepage: "https://github.com/fgonzalezurriola/dccprint"
+    description: "Una herramienta TUI para imprimir archivos en el DCC."
+    license: "GPL-3.0-or-later"
+    private_key: "{{ .Env.AUR_DCCPRINT_KEY }}"
+    package: |-
+      install -Dm755 "./dccprint" "${pkgdir}/usr/bin/dccprint"
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/dccprint-bin/LICENSE"
+    commit_author:
+      name: fgonzalezurriola
+      email: fgonzalezurriola@gmail.com # <- Usa tu email
+    commit_msg_template: "Update PKGBUILD to v{{ .Version }}"
