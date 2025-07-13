@@ -17,9 +17,9 @@ var themes = map[string]*Theme{
 	"Default": {
 		Selected:   lipgloss.Color("#3700ffff"), // Pink
 		Unselected: lipgloss.Color("#71e7f7ff"), // Gray
-		Foreground: lipgloss.Color("252"), // Light Gray
-		Background: lipgloss.Color("235"), // Dark Gray
-		Border:     lipgloss.Color("238"), // Darker Gray
+		Foreground: lipgloss.Color("252"),       // Light Gray
+		Background: lipgloss.Color("235"),       // Dark Gray
+		Border:     lipgloss.Color("238"),       // Darker Gray
 		Header:     lipgloss.Color("#71e7f7ff"), // Pink
 		Footer:     lipgloss.Color("#71e7f7ff"), // Pink
 		Accent:     lipgloss.Color("ffffff"),
@@ -37,7 +37,7 @@ var themes = map[string]*Theme{
 	"Anakena": {
 		Selected:   lipgloss.Color("#2f9c49"), // Anakena green
 		Unselected: lipgloss.Color("#252"),    // Green
-		Foreground: lipgloss.Color("#d00a05"), // Light gray // text
+		Foreground: lipgloss.Color("#d00a05"), // Light gray
 		Background: lipgloss.Color("234"),     // Very dark gray
 		Border:     lipgloss.Color("34"),      // Leaf green
 		Header:     lipgloss.Color("215"),     // Coral orange

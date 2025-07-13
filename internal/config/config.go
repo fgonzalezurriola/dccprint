@@ -24,10 +24,10 @@ var modes = map[int]ConfigItem{
 // Todo: support -dFirstPage= y -dLastPage= from postscript (or psselect -p5-10)
 // Todo: Consultar papel?
 type Config struct {
-	Theme          string `json:"theme"`
-	Account        string `json:"account"`
-	Printer        string `json:"printer"`
-	Mode           string `json:"mode"`
+	Theme   string `json:"theme"`
+	Account string `json:"account"`
+	Printer string `json:"printer"`
+	Mode    string `json:"mode"`
 }
 
 func configPath() (string, error) {

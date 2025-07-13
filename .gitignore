@@ -5,6 +5,7 @@
 *.md
 *.MD
 !README.md
+!install.sh
 # Binaries for programs and plugins
 *.exe
 *.exe~

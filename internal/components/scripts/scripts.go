@@ -94,84 +94,84 @@ echo '==============================================================='
 	scriptContent += fmt.Sprintf("ssh %s@anakena.dcc.uchile.cl << 'EOF'\n", username)
 	scriptContent += fmt.Sprintf("pdf2ps %q %q\n", filename, psname)
 
-    var printCommand string
-    
-    switch printer {
+	var printCommand string
+
+	switch printer {
 	case "Toqui":
-        switch mode {
+		switch mode {
 		case "Simple (Reverso en blanco)":
-            printCommand = fmt.Sprintf("lpr %s", psname)
-        case "Doble cara, Borde largo (Recomendado)":
-            printCommand = fmt.Sprintf("duplex %s | lpr", psname)
-        case "Doble cara, Borde corto":
-            printCommand = fmt.Sprintf("duplex -l %s | lpr", psname)
-        }
-    case "Salita":
-        switch mode {
-		case "Simple (Reverso en blanco)":
-            printCommand = fmt.Sprintf("lpr -P hp-335 %s", psname)
-        case "Doble cara, Borde largo (Recomendado)":
-            printCommand = fmt.Sprintf("duplex %s | lpr -P hp-335", psname)
-        case "Doble cara, Borde corto":
-            printCommand = fmt.Sprintf("duplex -l %s | lpr -P hp-335", psname)
-        }
-    }
-    
-    scriptContent += printCommand + "\n"
-    
-    // Output verifier
-    switch printer {
+			printCommand = fmt.Sprintf("lpr %s", psname)
+		case "Doble cara, Borde largo (Recomendado)":
+			printCommand = fmt.Sprintf("duplex %s | lpr", psname)
+		case "Doble cara, Borde corto":
+			printCommand = fmt.Sprintf("duplex -l %s | lpr", psname)
+		}
 	case "Salita":
-        scriptContent += "lpq -P hp-335\n"
-    case "Toqui":
-        scriptContent += "lpq\n"
-    }
-    
-    scriptContent += "papel\n"
-    scriptContent += "EOF\n\n"
-    scriptContent += `echo -e "${GREEN}IMPRESION COMPLETADA!${NC}"`
-    scriptContent += "\n"
-    scriptContent += `echo -e "Recuerda: usa 'ssh usuario@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes."`
-    
-    scriptPath := "print-" + basename + ".sh"
-    err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
-    if err != nil {
-        return "", fmt.Errorf("error escribiendo archivo: %w", err)
-    }
-    
-    return scriptPath, nil
+		switch mode {
+		case "Simple (Reverso en blanco)":
+			printCommand = fmt.Sprintf("lpr -P hp-335 %s", psname)
+		case "Doble cara, Borde largo (Recomendado)":
+			printCommand = fmt.Sprintf("duplex %s | lpr -P hp-335", psname)
+		case "Doble cara, Borde corto":
+			printCommand = fmt.Sprintf("duplex -l %s | lpr -P hp-335", psname)
+		}
+	}
+
+	scriptContent += printCommand + "\n"
+
+	// Output verifier
+	switch printer {
+	case "Salita":
+		scriptContent += "lpq -P hp-335\n"
+	case "Toqui":
+		scriptContent += "lpq\n"
+	}
+
+	scriptContent += "papel\n"
+	scriptContent += "EOF\n\n"
+	scriptContent += `echo -e "${GREEN}IMPRESION COMPLETADA!${NC}"`
+	scriptContent += "\n"
+	scriptContent += `echo -e "Recuerda: usa 'ssh usuario@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes."`
+
+	scriptPath := "print-" + basename + ".sh"
+	err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+	if err != nil {
+		return "", fmt.Errorf("error escribiendo archivo: %w", err)
+	}
+
+	return scriptPath, nil
 }
 
 func CopyToClipboard(text string) error {
-    var cmd *exec.Cmd
-    
-    switch runtime.GOOS {
-    case "windows":
-        cmd = exec.Command("cmd", "/c", "clip")
-    case "darwin":
-        cmd = exec.Command("pbcopy")
-    case "linux":
-        cmd = exec.Command("xclip", "-selection", "clipboard")
-    }
-    
-    cmd.Stdin = strings.NewReader(text)
-    return cmd.Run()
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "clip")
+	case "darwin":
+		cmd = exec.Command("pbcopy")
+	case "linux":
+		cmd = exec.Command("xclip", "-selection", "clipboard")
+	}
+
+	cmd.Stdin = strings.NewReader(text)
+	return cmd.Run()
 }
 
 func PrintSuccessMessage(scriptName string) tea.Cmd {
-    return func() tea.Msg {
-        fmt.Print("\n\n")
-        fmt.Println("Script generado exitosamente!")
-        fmt.Printf("Comando copiado: ./%s\n", scriptName)
-        fmt.Print("\n")
-        fmt.Println("Instrucciones:")
-        fmt.Println("1. Ctrl+Shift+V para pegar")
-        fmt.Println("2. Enter para ejecutar")
-        fmt.Println("3. Ingresa contraseña SSH")
-        fmt.Println("4. Archivo se enviará a impresora")
-        fmt.Print("\n")
-        fmt.Println("Listo para imprimir!")
-        fmt.Print("\n")
-        return nil
-    }
+	return func() tea.Msg {
+		fmt.Print("\n\n")
+		fmt.Println("Script generado exitosamente!")
+		fmt.Printf("Comando copiado: ./%s\n", scriptName)
+		fmt.Print("\n")
+		fmt.Println("Instrucciones:")
+		fmt.Println("1. Ctrl+Shift+V para pegar")
+		fmt.Println("2. Enter para ejecutar")
+		fmt.Println("3. Ingresa contraseña SSH")
+		fmt.Println("4. Archivo se enviará a impresora")
+		fmt.Print("\n")
+		fmt.Println("Listo para imprimir!")
+		fmt.Print("\n")
+		return nil
+	}
 }
