@@ -14,10 +14,11 @@ before:
 
 builds:
   - id: "dccprint"
-    main: ./cmd/dccprint/main.go
+    main: ./cmd/dccprint/
     binary: dccprint
     env:
       - CGO_ENABLED=0
+      - GOFLAGS=-v
     goos:
       - linux
       - darwin
@@ -27,8 +28,7 @@ builds:
       - arm64
 
 archives:
-  - format: tar.gz
-    name_template: >-
+  - name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
@@ -53,7 +53,6 @@ release:
 brews:
   - name: dccprint
     homepage: "https://github.com/fgonzalezurriola/dccprint"
-
     description: "Una herramienta TUI paraa imprimir archivos en el DCC."
     install: |
       bin.install "dccprint"
@@ -62,17 +61,24 @@ brews:
       name: homebrew-tap
 
 aurs:
-  - name: dccprint
-    git_url: "ssh://aur@aur.archlinux.org/dccprint.git"
+  - name: dccprint-bin
     homepage: "https://github.com/fgonzalezurriola/dccprint"
     description: "Una herramienta TUI para imprimir archivos en el DCC."
+    maintainers:
+      - "fgonzalezurriola <fgonzalezurriola@gmail.com>"
     license: "GPL-3.0-or-later"
     private_key: "{{ .Env.AUR_DCCPRINT_KEY }}"
+    git_url: "ssh://aur@aur.archlinux.org/dccprint-bin.git"
+    provides:
+      - dccprint
+    conflicts:
+      - dccprint
+    depends:
+      - glibc
     package: |-
-      pkgbase=dccprint
       install -Dm755 "./dccprint" "${pkgdir}/usr/bin/dccprint"
-      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/dccprint/LICENSE"
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/dccprint-bin/LICENSE"
+      install -Dm644 "./README.md" "${pkgdir}/usr/share/doc/dccprint-bin/README.md"
     commit_author:
-      name: fgonzalezurriola
-      email: fgonzalezurriola@gmail.com
-    commit_msg_template: "Update PKGBUILD to v{{ .Version }}"
+      name: "fgonzalezurriola"
+      email: "fgonzalezurriola@gmail.com"
