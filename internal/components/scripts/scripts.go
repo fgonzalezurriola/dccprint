@@ -89,7 +89,8 @@ echo '==============================================================='
 
 `
 	scriptContent += fmt.Sprintf("echo '1. Subiendo archivo %s...\n", filename)
-	scriptContent += fmt.Sprintf("scp %q %s@anakena.dcc.uchile.cl:~\n\n", filename, username)
+	scriptContent += fmt.Sprintf("scp %q %s@anakena.dcc.uchile.cl:~\n", filename, username)
+	scriptContent += "if [ $? -ne 0 ]; then\n  echo -e \"\\033[0;31mERROR: Falló la subida del archivo a anakena. Verifica tu conexión y vuelve a intentar.\\033[0m\"\n  exit 1\nfi\n\n"
 	scriptContent += "echo '2. Conectando a anakena y ejecutando comandos...\n"
 	scriptContent += fmt.Sprintf("ssh %s@anakena.dcc.uchile.cl << 'EOF'\n", username)
 	scriptContent += fmt.Sprintf("pdf2ps %q %q\n", filename, psname)
@@ -128,7 +129,8 @@ echo '==============================================================='
 	}
 
 	scriptContent += "papel\n"
-	scriptContent += "EOF\n\n"
+	scriptContent += "EOF\n"
+	scriptContent += "\nif [ $? -ne 0 ]; then\n  echo -e \"\\033[0;31mERROR: Falló la conexión o ejecución de comandos en anakena. Verifica tu conexión y vuelve a intentar.\\033[0m\"\n  exit 1\nfi\n"
 	scriptContent += `echo -e "${GREEN}IMPRESION COMPLETADA!${NC}"`
 	scriptContent += "\n"
 	scriptContent += `echo -e "Recuerda: usa 'ssh usuario@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes."`

@@ -41,11 +41,12 @@ func (s PrintView) View() string {
 		return fmt.Sprintf("PDFs no encontrados en %s", currDir)
 	}
 
-	var lines []string
 	if s.StatusMessage != "" {
 		msgStyle := lipgloss.NewStyle().Foreground(s.theme.Selected).Bold(true)
-		lines = append(lines, msgStyle.Render(s.StatusMessage))
+		return msgStyle.Render(s.StatusMessage)
 	}
+
+	var lines []string
 	for i, pdf := range s.pdfs {
 		cursor := " "
 		textStyle := lipgloss.NewStyle().Foreground(s.theme.Unselected)
