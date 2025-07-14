@@ -83,12 +83,13 @@ Para los package managers que usan archivos `.deb`, `.rpm` o `.apk` se puede usa
 Para Instalar o Actualizar usa la opción de curl o wget que ejecuta el script de instalación
 
 ```sh
-curl -sSL https://github.com/fgonzalezurriola/dccprint/releases/latest/download/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/fgonzalezurriola/dccprint/main/install.sh | bash
 ```
 
-```sh
-wget -O- https://github.com/fgonzalezurriola/dccprint/releases/latest/download/install.sh | bash
 ```
+wget -O- https://raw.githubusercontent.com/fgonzalezurriola/dccprint/main/install.sh | bash
+```
+
 
 ## Desinstalación
 

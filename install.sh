@@ -1,16 +1,10 @@
 #!/bin/bash
 
-# Script for installing dccprint
-# Support for
-# Archs:
-#   amd64
-#   arm64
-#   i386
-
-
 set -e
 
-# Arch
+echo "Detectando arquitectura y sistema operativo..."
+
+# Detectar arquitectura
 ARCH=$(uname -m)
 case "$ARCH" in
     x86_64) ARCH=amd64 ;;
@@ -20,7 +14,7 @@ case "$ARCH" in
     *) echo "Arquitectura no soportada: $ARCH"; exit 1 ;;
 esac
 
-# Operative system
+# Detectar sistema operativo y gestor de paquetes
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 PKG=""
 INSTALL=""
@@ -40,7 +34,7 @@ if [ "$OS" = "linux" ]; then
     fi
 elif [ "$OS" = "darwin" ]; then
     if command -v brew >/dev/null; then
-        echo "Usa las instrucciones para MacOS con Homebew"; exit 0
+        echo "Usa las instrucciones para MacOS con Homebrew"; exit 0
     else
         echo "Instalación manual en macOS no soportada. Usa Homebrew."; exit 1
     fi
@@ -48,11 +42,16 @@ else
     echo "Sistema operativo no soportado: $OS"; exit 1
 fi
 
-REPO="https://github.com/fgonzalezurriola/dccprint/releases/latest/download"
-FILE="dccprint_*_${OS}_${ARCH}.${PKG}"
-URL="$REPO/$FILE"
+echo "Obteniendo la última versión de dccprint..."
+VERSION=$(curl -s https://api.github.com/repos/fgonzalezurriola/dccprint/releases/latest | grep tag_name | cut -d '"' -f 4)
+if [ -z "$VERSION" ]; then
+    echo "No se pudo obtener la última versión. Revisa tu conexión a internet."; exit 1
+fi
 
-# Download package
+FILE="dccprint_${VERSION#v}_linux_${ARCH}.${PKG}"
+URL="https://github.com/fgonzalezurriola/dccprint/releases/download/${VERSION}/${FILE}"
+
+echo "Descargando $FILE desde $URL ..."
 if command -v wget >/dev/null; then
     wget "$URL" -O "$FILE"
 elif command -v curl >/dev/null; then
@@ -61,7 +60,10 @@ else
     echo "wget o curl no están instalados"; exit 1
 fi
 
+echo "Instalando dccprint (puede requerir tu contraseña de sudo)..."
 $INSTALL "$FILE"
+
+echo "Limpiando archivos temporales..."
 rm "$FILE"
 
-echo "dccprint instalado correctamente."
+echo "dccprint instalado o actualizado correctamente."
