@@ -124,28 +124,28 @@ aurs:
     commit_author:
       name: "fgonzalezurriola"
       email: "fgonzalezurriola@gmail.com"
-# snapcrafts:
-#   - id: dccprint
-#     name: dccprint
-#     title: "DCC Print"
-#     summary: "TUI para imprimir archivos en el DCC"
-#     description: |
-#       Una herramienta TUI que permite a los usuarios del DCC
-#       imprimir archivos de forma sencilla.
-#     grade: stable
-#     confinement: strict
-#     base: core22
-#     license: GPL-3.0-or-later
-#     publish: true
-#     channel_templates:
-#       - edge
-#       - beta
-#       - candidate
-#       - stable
-#     apps:
-#       dccprint:
-#         command: bin/dccprint
-#         plugs:
-#           - home
-#           - network
+snapcrafts:
+  - id: dccprint
+    name: dccprint
+    title: "DCC Print"
+    summary: "TUI para imprimir archivos en el DCC"
+    description: |
+      Una herramienta TUI que permite a los usuarios del DCC
+      imprimir archivos de forma sencilla.
+    grade: stable
+    confinement: strict
+    base: core22
+    license: GPL-3.0-or-later
+    publish: true
+    channel_templates:
+      - edge
+      - beta
+      - candidate
+      - stable
+    apps:
+      dccprint:
+        command: bin/dccprint
+        plugs:
+          - home
+          - network
 
