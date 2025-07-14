@@ -124,8 +124,6 @@ aurs:
 
 snapcrafts:
   - id: dccprint
-    ids:
-      - dccprint
     name: dccprint
     title: "DCC Print"
     summary: "TUI para imprimir archivos en el DCC"
