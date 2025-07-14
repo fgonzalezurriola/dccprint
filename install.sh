@@ -23,14 +23,18 @@ if [ "$OS" = "linux" ]; then
     if command -v apt-get >/dev/null; then
         PKG="deb"
         INSTALL="sudo dpkg -i"
-    elif command -v dnf >/dev/null; then
+    elif command -v dnf >/dev/null || command -v zypper >/dev/null; then
         PKG="rpm"
-        INSTALL="sudo dnf install -y"
+        if command -v zypper >/dev/null; then
+            INSTALL="sudo zypper install"
+        else
+            INSTALL="sudo dnf install -y"
+        fi
     elif command -v apk >/dev/null; then
         PKG="apk"
         INSTALL="sudo apk add --allow-untrusted"
     else
-        echo "No se detectó un gestor de paquetes soportado (dpkg, dnf, apk, apt)"; exit 1
+        echo "No se detectó un gestor de paquetes soportado (dpkg, dnf, zypper, apk, apt)"; exit 1
     fi
 elif [ "$OS" = "darwin" ]; then
     if command -v brew >/dev/null; then
