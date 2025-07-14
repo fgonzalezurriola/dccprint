@@ -53,10 +53,11 @@ func GetPDFFiles() []string {
 	return PDFs
 }
 
+// validar gv
+// escapar
 // Func to create the main feature in order to print
 func CreateScript(filename string) (string, error) {
 	basename := strings.TrimSuffix(filename, filepath.Ext(filename))
-	psname := basename + ".ps"
 	cfg := config.Load()
 	username := cfg.Account
 	printer := cfg.Printer
@@ -65,6 +66,7 @@ func CreateScript(filename string) (string, error) {
 	scriptContent := `#!/usr/bin/env bash
 ORANGE='\033[38;5;208m'
 GREEN='\033[0;32m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${ORANGE}"
@@ -80,47 +82,54 @@ echo -e "${NC}"
 
 echo '==============================================================='
 echo 'DCC PRINT - SCRIPT GENERADO'
-echo 'Este script generado:'	
-echo 'Con SSH se conecta a Anakena con tu cuenta, pidiendo tu contraseña'
-echo 'Con SCP el archivo en formato .ps (postscript)'
-echo 'Usa el comando para imprimir según la configuración seleccionada'
-echo 'A continuación ingresa tu contraseña para ingresar por SSH'
+echo 'Este script:'	
+echo '1. Con SCP sube el archivo PDF a Anakena'
+echo '2. Con SSH se conecta y ejecuta comandos de impresión'
+echo '3. Usa el comando para imprimir según la configuración seleccionada'
+echo 'A continuación ingresa tu contraseña para subir el archivo'
 echo '==============================================================='
 
 `
-	scriptContent += fmt.Sprintf("echo '1. Subiendo archivo %s...\n", filename)
+	// SCP step	
+	scriptContent += fmt.Sprintf("echo -e \"${GREEN}1. Subiendo archivo %s...${NC}\"\n", filename)
 	scriptContent += fmt.Sprintf("scp %q %s@anakena.dcc.uchile.cl:~\n", filename, username)
-	scriptContent += "if [ $? -ne 0 ]; then\n  echo -e \"\\033[0;31mERROR: Falló la subida del archivo a anakena. Verifica tu conexión y vuelve a intentar.\\033[0m\"\n  exit 1\nfi\n\n"
-	scriptContent += "echo '2. Conectando a anakena y ejecutando comandos...\n"
+	scriptContent += "if [ $? -ne 0 ]; then\n"
+	scriptContent += "  echo -e \"${RED}ERROR: Falló la subida del archivo a anakena. Verifica tu conexión y vuelve a intentar.${NC}\"\n"
+	scriptContent += "  exit 1\nfi\n\n"
+	
+	// SSH step
+	scriptContent += "echo -e \"${GREEN}2. Conectando a anakena y ejecutando comandos...${NC}\"\n"
 	scriptContent += fmt.Sprintf("ssh %s@anakena.dcc.uchile.cl << 'EOF'\n", username)
-	scriptContent += fmt.Sprintf("pdf2ps %q %q\n", filename, psname)
-
+	
 	var printCommand string
-
+	pdfname := filepath.Base(filename)
+	psname := strings.TrimSuffix(pdfname, filepath.Ext(pdfname)) + ".ps"
 	switch printer {
 	case "Toqui":
 		switch mode {
 		case "Simple (Reverso en blanco)":
-			printCommand = fmt.Sprintf("lpr %s", psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && lpr %s", pdfname, psname, psname)
 		case "Doble cara, Borde largo (Recomendado)":
-			printCommand = fmt.Sprintf("duplex %s | lpr", psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s|lpr", pdfname, psname, psname)
 		case "Doble cara, Borde corto":
-			printCommand = fmt.Sprintf("duplex -l %s | lpr", psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr", pdfname, psname, psname)
 		}
 	case "Salita":
 		switch mode {
 		case "Simple (Reverso en blanco)":
-			printCommand = fmt.Sprintf("lpr -P hp-335 %s", psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && lpr -P hp-335 %s", pdfname, psname, psname)
 		case "Doble cara, Borde largo (Recomendado)":
-			printCommand = fmt.Sprintf("duplex %s | lpr -P hp-335", psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s|lpr -P hp-335", pdfname, psname, psname)
 		case "Doble cara, Borde corto":
-			printCommand = fmt.Sprintf("duplex -l %s | lpr -P hp-335", psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr -P hp-335", pdfname, psname, psname)
 		}
 	}
+	
+	scriptContent += fmt.Sprintf("if [ ! -f \"%s\" ]; then\n", pdfname)
+	scriptContent += "  echo \"ERROR: El archivo PDF no se encontró en el directorio home\"\n"
+	scriptContent += "  exit 1\nfi\n\n"
+	scriptContent += printCommand + "\n\n"
 
-	scriptContent += printCommand + "\n"
-
-	// Output verifier
 	switch printer {
 	case "Salita":
 		scriptContent += "lpq -P hp-335\n"
@@ -129,11 +138,14 @@ echo '==============================================================='
 	}
 
 	scriptContent += "papel\n"
-	scriptContent += "EOF\n"
-	scriptContent += "\nif [ $? -ne 0 ]; then\n  echo -e \"\\033[0;31mERROR: Falló la conexión o ejecución de comandos en anakena. Verifica tu conexión y vuelve a intentar.\\033[0m\"\n  exit 1\nfi\n"
-	scriptContent += `echo -e "${GREEN}IMPRESION COMPLETADA!${NC}"`
-	scriptContent += "\n"
-	scriptContent += `echo -e "Recuerda: usa 'ssh usuario@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes."`
+	scriptContent += "EOF\n\n"
+	
+	scriptContent += "if [ $? -ne 0 ]; then\n"
+	scriptContent += "  echo -e \"${RED}ERROR: Falló la conexión o ejecución de comandos en anakena.${NC}\"\n"
+	scriptContent += "  exit 1\nfi\n\n"
+	
+	scriptContent += "echo -e \"${GREEN}¡IMPRESIÓN COMPLETADA!${NC}\"\n"
+	scriptContent += "echo -e \"Recuerda: usa 'ssh usuario@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes.\"\n"
 
 	scriptPath := "print-" + basename + ".sh"
 	err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
@@ -153,7 +165,14 @@ func CopyToClipboard(text string) error {
 	case "darwin":
 		cmd = exec.Command("pbcopy")
 	case "linux":
-		cmd = exec.Command("xclip", "-selection", "clipboard")
+		// Probar x11 sino Wayland
+		if _, err := exec.LookPath("xclip"); err == nil {
+			cmd = exec.Command("xclip", "-selection", "clipboard")
+		} else if _, err := exec.LookPath("wl-copy"); err == nil {
+			cmd = exec.Command("wl-copy")
+		} else {
+			return fmt.Errorf("no se encontró ninguna herramienta de portapapeles (xclip o wl-copy)")
+		}
 	}
 
 	cmd.Stdin = strings.NewReader(text)
