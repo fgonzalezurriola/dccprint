@@ -74,6 +74,26 @@ La configuración se guarda en `$HOME/.dccprint_config.json` y la puedes actuali
   brew upgrade dccprint
   ```
 
+## Snap
+
+Snap es una herramienta que viene preinstalada en Ubuntu y funciona en muchas otras distros
+
+![snapper](/assets/snapper.gif)
+
+Gif del legendario Terry Davis
+
+Para instalar
+
+```sh
+snap install dccprint
+```
+
+Para actualizar
+
+```sh
+sudo snap refresh
+```
+
 ## Otros
 
 Para los package managers que usan archivos `.deb`, `.rpm` o `.apk` se puede usar el script que detecta arquitectura, OS y package manager para instalar dccprint
@@ -90,7 +110,6 @@ curl -sSL https://raw.githubusercontent.com/fgonzalezurriola/dccprint/main/insta
 wget -O- https://raw.githubusercontent.com/fgonzalezurriola/dccprint/main/install.sh | bash
 ```
 
-
 ## Desinstalación
 
 ```sh
@@ -100,6 +119,9 @@ paru -R dccprint
 
 # Homebrew (macOS/Linux)
 brew uninstall dccprint
+
+# Snap
+snap remove dccprint
 
 # Debian/Ubuntu
 sudo apt-get remove dccprint
