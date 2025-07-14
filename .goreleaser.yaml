@@ -1,12 +1,11 @@
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
-
 # The lines below are called `modelines`. See `:help modeline`
 # Feel free to remove those if you don't want/need to use them.
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
-version: 1
+version: 2
 
 before:
   hooks:
@@ -26,6 +25,7 @@ builds:
       - amd64
       - "386"
       - arm64
+    # Removido el hook post problemático
 
 archives:
   - name_template: >-
@@ -46,9 +46,7 @@ changelog:
 release:
   replace_existing_draft: true
   footer: >-
-
     ---
-
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
 
 nfpms:
@@ -95,7 +93,7 @@ nfpms:
 brews:
   - name: dccprint
     homepage: "https://github.com/fgonzalezurriola/dccprint"
-    description: "Una herramienta TUI paraa imprimir archivos en el DCC."
+    description: "Una herramienta TUI para imprimir archivos en el DCC."
     install: |
       bin.install "dccprint"
     repository:
@@ -124,28 +122,27 @@ aurs:
     commit_author:
       name: "fgonzalezurriola"
       email: "fgonzalezurriola@gmail.com"
+
 snapcrafts:
   - id: dccprint
+    ids:
+      - dccprint
     name: dccprint
     title: "DCC Print"
     summary: "TUI para imprimir archivos en el DCC"
     description: |
-      Una herramienta TUI que permite a los usuarios del DCC
-      imprimir archivos de forma sencilla.
+      Una herramienta TUI que permite a los usuarios
+      del DCC imprimir archivos de forma sencilla.
     grade: stable
     confinement: strict
     base: core22
     license: GPL-3.0-or-later
     publish: true
     channel_templates:
-      - edge
-      - beta
-      - candidate
       - stable
     apps:
       dccprint:
-        command: bin/dccprint
+        command: dccprint
         plugs:
           - home
           - network
-

@@ -37,3 +37,6 @@ go.work.sum
 # .vscode/
 # Added by goreleaser init:
 dist/
+
+# Snapcraft credentials (never commit)
+snapcraft-login.json

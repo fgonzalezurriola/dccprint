@@ -20,10 +20,14 @@ jobs:
         with:
           go-version: "1.24.5"
 
+      - name: Install Snapcraft
+        run: sudo snap install snapcraft --classic
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:
           args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          AUR_DCCPRINT_KEY: ${{ secrets.AUR }}
+env:
+  GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+  AUR_DCCPRINT_KEY: ${{ secrets.AUR }}
+  SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
