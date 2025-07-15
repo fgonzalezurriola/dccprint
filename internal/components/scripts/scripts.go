@@ -148,11 +148,13 @@ echo '==============================================================='
 	scriptContent += "echo -e \"Recuerda: usa 'ssh usuario@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes.\"\n"
 
 	scriptPath := "print-" + basename + ".sh"
+	scriptContent += `rm -- "$0"`
+	
 	err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
 	if err != nil {
 		return "", fmt.Errorf("error escribiendo archivo: %w", err)
 	}
-
+	
 	return scriptPath, nil
 }
 
