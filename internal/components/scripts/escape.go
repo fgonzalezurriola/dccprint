@@ -9,6 +9,7 @@ import (
 )
 
 // EscapeFilename cleans the filename by removing diacritics, spaces, and disallowed characters.
+// EscapeFilename cleans the filename by removing diacritics, spaces, and disallowed characters.
 func EscapeFilename(name string) string {
 	name = strings.ToLower(name)
 
@@ -26,7 +27,7 @@ func EscapeFilename(name string) string {
 	name = strings.ReplaceAll(name, " ", "")
 
 	// Keep only lowercase letters, numbers, dot, underscore, and hyphen
-	re := regexp.MustCompile(`[^a-z0-9._-]`) 
+	re := regexp.MustCompile(`[^a-z0-9._-]`)
 	name = re.ReplaceAllString(name, "")
 
 	if name == "" {

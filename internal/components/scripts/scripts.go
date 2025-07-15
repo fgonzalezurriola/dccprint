@@ -1,6 +1,7 @@
 package scripts
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -8,12 +9,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fgonzalezurriola/dccprint/internal/config"
 )
 
 // Func to remove al Shell Scripts that starts with "printdcc_"
+// RemoveGeneratedScripts deletes all generated shell scripts in the given directory that start with "dccprint_" and end with ".sh".
 func RemoveGeneratedScripts(dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -53,6 +56,23 @@ func GetPDFFiles() []string {
 	return PDFs
 }
 
+// ValidatePSWithGhostscript runs Ghostscript on the .ps file with a 2-second timeout
+// Returns an error, nil if it's valid
+// If the timeout it's reached or the ghoscript command passes, return nil
+// If ghostcript returns an error if the file is invalid
+func ValidatePSWithGhostscript(psPath string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "gs", "-sDEVICE=nullpage", "-dBATCH", "-dNOPAUSE", psPath)
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil
+		}
+		return fmt.Errorf("Ghostscript could not validate the .ps file. Suggestion: flatten the PDF or use repair tools. Error: %w", err)
+	}
+	return nil
+}
+
 // Func to create the main feature in order to print
 func CreateScript(filename string) (string, error) {
 	escapedName := EscapeFilename(filename)
@@ -62,8 +82,7 @@ func CreateScript(filename string) (string, error) {
 	printer := cfg.Printer
 	mode := cfg.Mode
 
-	// Create a temporal copy pdf to use in scp if the escaped name is different than the filename
-	// With defer it deletes at the end of the CreateScript use
+	// Create a temporal copy pdf to use in SCP and SSH if the escaped name is different than the filename
 	useTempCopy := escapedName != filename
 	if useTempCopy {
 		input, err := os.ReadFile(filename)
@@ -76,7 +95,7 @@ func CreateScript(filename string) (string, error) {
 		}
 	}
 
-	// If the script uses the escaped copy, it deletes at the end
+	// If the script uses the escaped copy, it's deleted at the end
 	// The script rm itself after use
 	scriptContent := `#!/usr/bin/env bash
 ORANGE='\033[38;5;208m'
@@ -119,6 +138,12 @@ echo '==============================================================='
 	var printCommand string
 	pdfname := filepath.Base(escapedName)
 	psname := strings.TrimSuffix(pdfname, filepath.Ext(pdfname)) + ".ps"
+
+	// Validate .ps generated
+	if err := ValidatePSWithGhostscript(psname); err != nil {
+		return "", err
+	}
+
 	switch printer {
 	case "Toqui":
 		switch mode {
