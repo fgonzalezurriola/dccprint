@@ -40,3 +40,5 @@ dist/
 
 # Snapcraft credentials (never commit)
 snapcraft-login.json
+
+experiment/
