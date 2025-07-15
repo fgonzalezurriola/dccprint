@@ -53,16 +53,31 @@ func GetPDFFiles() []string {
 	return PDFs
 }
 
-// validar gv
-// escapar
 // Func to create the main feature in order to print
 func CreateScript(filename string) (string, error) {
-	basename := strings.TrimSuffix(filename, filepath.Ext(filename))
+	escapedName := EscapeFilename(filename)
+	basename := strings.TrimSuffix(escapedName, filepath.Ext(escapedName))
 	cfg := config.Load()
 	username := cfg.Account
 	printer := cfg.Printer
 	mode := cfg.Mode
 
+	// Create a temporal copy pdf to use in scp if the escaped name is different than the filename
+	// With defer it deletes at the end of the CreateScript use
+	useTempCopy := escapedName != filename
+	if useTempCopy {
+		input, err := os.ReadFile(filename)
+		if err != nil {
+			return "", fmt.Errorf("Error leyendo el archivo seleccionado: %w", err)
+		}
+		err = os.WriteFile(escapedName, input, 0644)
+		if err != nil {
+			return "", fmt.Errorf("Error creando copia temporal: %w", err)
+		}
+	}
+
+	// If the script uses the escaped copy, it deletes at the end
+	// The script rm itself after use
 	scriptContent := `#!/usr/bin/env bash
 ORANGE='\033[38;5;208m'
 GREEN='\033[0;32m'
@@ -90,19 +105,19 @@ echo 'A continuación ingresa tu contraseña para subir el archivo'
 echo '==============================================================='
 
 `
-	// SCP step	
-	scriptContent += fmt.Sprintf("echo -e \"${GREEN}1. Subiendo archivo %s...${NC}\"\n", filename)
-	scriptContent += fmt.Sprintf("scp %q %s@anakena.dcc.uchile.cl:~\n", filename, username)
+	// SCP step
+	scriptContent += fmt.Sprintf("echo -e \"${GREEN}1. Subiendo archivo %s...${NC}\"\n", escapedName)
+	scriptContent += fmt.Sprintf("scp %q %s@anakena.dcc.uchile.cl:~\n", escapedName, username)
 	scriptContent += "if [ $? -ne 0 ]; then\n"
 	scriptContent += "  echo -e \"${RED}ERROR: Falló la subida del archivo a anakena. Verifica tu conexión y vuelve a intentar.${NC}\"\n"
 	scriptContent += "  exit 1\nfi\n\n"
-	
+
 	// SSH step
 	scriptContent += "echo -e \"${GREEN}2. Conectando a anakena y ejecutando comandos...${NC}\"\n"
 	scriptContent += fmt.Sprintf("ssh %s@anakena.dcc.uchile.cl << 'EOF'\n", username)
-	
+
 	var printCommand string
-	pdfname := filepath.Base(filename)
+	pdfname := filepath.Base(escapedName)
 	psname := strings.TrimSuffix(pdfname, filepath.Ext(pdfname)) + ".ps"
 	switch printer {
 	case "Toqui":
@@ -124,7 +139,7 @@ echo '==============================================================='
 			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr -P hp-335", pdfname, psname, psname)
 		}
 	}
-	
+
 	scriptContent += fmt.Sprintf("if [ ! -f \"%s\" ]; then\n", pdfname)
 	scriptContent += "  echo \"ERROR: El archivo PDF no se encontró en el directorio home\"\n"
 	scriptContent += "  exit 1\nfi\n\n"
@@ -139,25 +154,28 @@ echo '==============================================================='
 
 	scriptContent += "papel\n"
 	scriptContent += "EOF\n\n"
-	
+
 	scriptContent += "if [ $? -ne 0 ]; then\n"
 	scriptContent += "  echo -e \"${RED}ERROR: Falló la conexión o ejecución de comandos en anakena.${NC}\"\n"
 	scriptContent += "  exit 1\nfi\n\n"
-	
+
 	scriptContent += "echo -e \"${GREEN}¡IMPRESIÓN COMPLETADA!${NC}\"\n"
 	scriptContent += "echo -e \"Recuerda: usa 'ssh usuario@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes.\"\n"
 
 	scriptPath := "print-" + basename + ".sh"
 	scriptContent += `rm -- "$0"`
-	
+
+	if useTempCopy {
+		scriptContent += fmt.Sprintf("\nrm -- %q\n", escapedName)
+	}
+
 	err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
 	if err != nil {
 		return "", fmt.Errorf("error escribiendo archivo: %w", err)
 	}
-	
+
 	return scriptPath, nil
 }
-
 func CopyToClipboard(text string) error {
 	var cmd *exec.Cmd
 
@@ -166,14 +184,16 @@ func CopyToClipboard(text string) error {
 		cmd = exec.Command("cmd", "/c", "clip")
 	case "darwin":
 		cmd = exec.Command("pbcopy")
-	case "linux":
-		// Probar x11 sino Wayland
+	case "linux", "freebsd", "openbsd", "netbsd":
+		// Try X11, Wayland and an ancient clipboard
 		if _, err := exec.LookPath("xclip"); err == nil {
 			cmd = exec.Command("xclip", "-selection", "clipboard")
 		} else if _, err := exec.LookPath("wl-copy"); err == nil {
 			cmd = exec.Command("wl-copy")
+		} else if _, err := exec.LookPath("xsel"); err == nil {
+			cmd = exec.Command("xsel", "--clipboard", "--input")
 		} else {
-			return fmt.Errorf("no se encontró ninguna herramienta de portapapeles (xclip o wl-copy)")
+			return fmt.Errorf("ninguna herramienta de portapapeles encontrada (se necesita xclip, wl-copy o xsel)")
 		}
 	}
 
