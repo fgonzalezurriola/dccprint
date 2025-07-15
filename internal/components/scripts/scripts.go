@@ -7,10 +7,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fgonzalezurriola/dccprint/internal/config"
 )
@@ -61,14 +61,24 @@ func GetPDFFiles() []string {
 // If the timeout it's reached or the ghoscript command passes, return nil
 // If ghostcript returns an error if the file is invalid
 func ValidatePSWithGhostscript(psPath string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	if _, err := exec.LookPath("gs"); err != nil {
+		return fmt.Errorf("Ghostscript (gs) no está instalado: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "gs", "-sDEVICE=nullpage", "-dBATCH", "-dNOPAUSE", psPath)
-	if err := cmd.Run(); err != nil {
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			return nil
+			return nil 
 		}
-		return fmt.Errorf("Ghostscript could not validate the .ps file. Suggestion: flatten the PDF or use repair tools. Error: %w", err)
+		outStr := string(output)
+		if strings.Contains(outStr, "Error") || strings.Contains(outStr, "FATAL") {
+			return fmt.Errorf("Ghostscript detectó error fatal en el archivo .ps. Salida: %s", outStr)
+		}
+		return nil
 	}
 	return nil
 }
@@ -139,10 +149,15 @@ echo '==============================================================='
 	pdfname := filepath.Base(escapedName)
 	psname := strings.TrimSuffix(pdfname, filepath.Ext(pdfname)) + ".ps"
 
-	// Validate .ps generated
+	// Generate temporal .ps for validation and remove
+	cmd := exec.Command("pdf2ps", pdfname, psname)
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("Error generando el archivo .ps con pdf2ps: %w", err)
+	}
 	if err := ValidatePSWithGhostscript(psname); err != nil {
 		return "", err
 	}
+	_ = os.Remove(psname)
 
 	switch printer {
 	case "Toqui":
@@ -201,29 +216,13 @@ echo '==============================================================='
 
 	return scriptPath, nil
 }
+
 func CopyToClipboard(text string) error {
-	var cmd *exec.Cmd
-
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/c", "clip")
-	case "darwin":
-		cmd = exec.Command("pbcopy")
-	case "linux", "freebsd", "openbsd", "netbsd":
-		// Try X11, Wayland and an ancient clipboard
-		if _, err := exec.LookPath("xclip"); err == nil {
-			cmd = exec.Command("xclip", "-selection", "clipboard")
-		} else if _, err := exec.LookPath("wl-copy"); err == nil {
-			cmd = exec.Command("wl-copy")
-		} else if _, err := exec.LookPath("xsel"); err == nil {
-			cmd = exec.Command("xsel", "--clipboard", "--input")
-		} else {
-			return fmt.Errorf("ninguna herramienta de portapapeles encontrada (se necesita xclip, wl-copy o xsel)")
-		}
+	importedErr := clipboard.WriteAll(text)
+	if importedErr != nil {
+		return fmt.Errorf("error copiando al portapapeles: %w", importedErr)
 	}
-
-	cmd.Stdin = strings.NewReader(text)
-	return cmd.Run()
+	return nil
 }
 
 func PrintSuccessMessage(scriptName string) tea.Cmd {
