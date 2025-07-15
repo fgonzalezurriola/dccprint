@@ -1,10 +1,12 @@
-version: 1
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
 # The lines below are called `modelines`. See `:help modeline`
 # Feel free to remove those if you don't want/need to use them.
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+# version 1: free user (actual setting) version 2: paid user
+version: 1
 
 before:
   hooks:
@@ -24,7 +26,6 @@ builds:
       - amd64
       - "386"
       - arm64
-    # Removido el hook post problemático
 
 archives:
   - name_template: >-
@@ -62,16 +63,24 @@ nfpms:
       - apk
     dependencies:
       - glibc
+      - ghostscript
+      - openssh-client
     overrides:
       deb:
         dependencies:
           - libc6
+          - ghostscript
+          - openssh-client
       rpm:
         dependencies:
           - glibc
+          - ghostscript
+          - openssh-client
       apk:
         dependencies:
           - musl
+          - ghostscript
+          - openssh-client
     contents:
       - src: LICENSE
         dst: /usr/share/licenses/dccprint/LICENSE
@@ -114,6 +123,8 @@ aurs:
       - dccprint
     depends:
       - glibc
+      - ghostscript
+      - openssh-client
     package: |-
       install -Dm755 "./dccprint" "${pkgdir}/usr/bin/dccprint"
       install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/dccprint-bin/LICENSE"
