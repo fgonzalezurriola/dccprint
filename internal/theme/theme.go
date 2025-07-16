@@ -10,44 +10,37 @@ type Theme struct {
 	Border     lipgloss.Color
 	Header     lipgloss.Color
 	Footer     lipgloss.Color
-	Accent     lipgloss.Color
 }
 
+// "Terminal" theme uses terminal's default foreground/background and ANSI colors
+// Selected, Unselected, Header, etc. use basic ANSI colors for visibility
 var themes = map[string]*Theme{
 	"Default": {
-		Selected:   lipgloss.Color("#3700ffff"), // Pink
-		Unselected: lipgloss.Color("#71e7f7ff"), // Gray
-		Foreground: lipgloss.Color("252"),       // Light Gray
-		Background: lipgloss.Color("235"),       // Dark Gray
-		Border:     lipgloss.Color("238"),       // Darker Gray
-		Header:     lipgloss.Color("#71e7f7ff"), // Pink
-		Footer:     lipgloss.Color("#71e7f7ff"), // Pink
-		Accent:     lipgloss.Color("ffffff"),
+		Selected:   lipgloss.Color("#ffc934ff"),
+		Unselected: lipgloss.Color("#8d6f1dff"),
+		Foreground: lipgloss.Color("#default"),
+		Background: lipgloss.Color("#default"),
+		Header:     lipgloss.Color("#430fffff"),
 	},
 	"Dcc...": {
-		Selected:   lipgloss.Color("32"),  // Blue
-		Unselected: lipgloss.Color("240"), // Mid grey
-		Foreground: lipgloss.Color("228"), // Light yellow
-		Background: lipgloss.Color("235"), // Gris oscuro
-		Border:     lipgloss.Color("23"),  // Midnight green
+		Selected:   lipgloss.Color("#00BCF0"),
+		Unselected: lipgloss.Color("#5d8c99ff"),
+		Foreground: lipgloss.Color("228"),
+		Background: lipgloss.Color("#36454F"),
 		Header:     lipgloss.Color("228"),
-		Footer:     lipgloss.Color("228"),
-		Accent:     lipgloss.Color("49"), // Emerald
 	},
 	"Anakena": {
-		Selected:   lipgloss.Color("#2f9c49"), // Anakena green
-		Unselected: lipgloss.Color("#252"),    // Green
-		Foreground: lipgloss.Color("#d00a05"), // Light gray
-		Background: lipgloss.Color("234"),     // Very dark gray
-		Border:     lipgloss.Color("34"),      // Leaf green
-		Header:     lipgloss.Color("215"),     // Coral orange
-		Footer:     lipgloss.Color("215"),     // Leaf green
-		Accent:     lipgloss.Color("67"),      // Muted blue
+		Selected:   lipgloss.Color("#32a74eff"),
+		Unselected: lipgloss.Color("#22883aff"),
+		Foreground: lipgloss.Color("#d00a05"),
+		Background: lipgloss.Color("#36454F"),
+		Header:     lipgloss.Color("#ffa149ff"),
 	},
 }
 
 // function New returns a Theme by its name
 // If the name is not found, returns "Default"
+// To use terminal colors, select theme "Terminal"
 func New(name string) *Theme {
 	if t, ok := themes[name]; ok {
 		return t

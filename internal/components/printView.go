@@ -42,7 +42,7 @@ func (s PrintView) View() string {
 	}
 
 	if s.StatusMessage != "" {
-		msgStyle := lipgloss.NewStyle().Foreground(s.theme.Selected).Bold(true)
+		msgStyle := lipgloss.NewStyle().Foreground(s.theme.Unselected).Bold(true)
 		return msgStyle.Render(s.StatusMessage)
 	}
 
