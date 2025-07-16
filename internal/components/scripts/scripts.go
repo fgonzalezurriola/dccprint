@@ -1,13 +1,13 @@
 package scripts
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/atotto/clipboard"
@@ -23,7 +23,7 @@ func RemoveGeneratedScripts(dir string) error {
 		return err
 	}
 	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasPrefix(entry.Name(), "dccprint_") && strings.HasSuffix(entry.Name(), ".sh") {
+		if !entry.IsDir() && ((strings.HasPrefix(entry.Name(), "dccprint_") && strings.HasSuffix(entry.Name(), ".sh")) || strings.HasPrefix(entry.Name(), "dccprint-temp-")) {
 			fullPath := filepath.Join(dir, entry.Name())
 			err := os.Remove(fullPath)
 			if err != nil {
@@ -56,50 +56,80 @@ func GetPDFFiles() []string {
 	return PDFs
 }
 
-// ValidatePSWithGhostscript runs Ghostscript on the .ps file with a 2-second timeout
-// Returns an error, nil if it's valid
-// If the timeout it's reached or the ghoscript command passes, return nil
-// If ghostcript returns an error if the file is invalid
-func ValidatePSWithGhostscript(psPath string) error {
+// ValidatePDFWithGhostscript validates a PDF file using Ghostscript with a 3-second timeout.
+// It uses fast flags (-o /dev/null -sDEVICE=nullpage) to avoid disk IO and speed up validation.
+// If Ghostscript does not finish in time, the process group is killed to avoid zombies (works on Mac and Linux).
+// Returns nil if the file is valid or if timeout is reached. Returns an error if Ghostscript detects a fatal error in the file.
+func ValidatePDFWithGhostscript(pdfPath string) error {
 	if _, err := exec.LookPath("gs"); err != nil {
-		return fmt.Errorf("Ghostscript (gs) no está instalado: %w", err)
+		return fmt.Errorf("Ghostscript (gs) is not installed: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "gs", "-sDEVICE=nullpage", "-dBATCH", "-dNOPAUSE", psPath)
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return nil 
-		}
-		outStr := string(output)
-		if strings.Contains(outStr, "Error") || strings.Contains(outStr, "FATAL") {
-			return fmt.Errorf("Ghostscript detectó error fatal en el archivo .ps. Salida: %s", outStr)
+	cmd := exec.Command("gs", "-o", "/dev/null", "-sDEVICE=nullpage", pdfPath)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	var output strings.Builder
+	cmd.Stdout = &output
+	cmd.Stderr = &output
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("Could not start Ghostscript: %w", err)
+	}
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+	select {
+	case err := <-done:
+		outStr := output.String()
+		if err != nil {
+			if strings.Contains(outStr, "Error") || strings.Contains(outStr, "FATAL") || strings.Contains(outStr, "Unrecoverable error") {
+				return fmt.Errorf("Ghostscript detected fatal error in PDF file. Output: %s", outStr)
+			}
+			return nil
 		}
 		return nil
+	case <-time.After(3 * time.Second):
+		killProcessGroup(cmd)
+		return nil
 	}
-	return nil
+}
+
+// killProcessGroup forcefully kills the process group for the given command.
+// This ensures that all child processes are terminated, preventing zombies.
+func killProcessGroup(cmd *exec.Cmd) {
+	if cmd.Process == nil {
+		return
+	}
+	pgid := cmd.Process.Pid
+	if cmd.SysProcAttr != nil && cmd.SysProcAttr.Setpgid {
+		pgid = cmd.Process.Pid
+	}
+	_ = syscall.Kill(-pgid, syscall.SIGTERM)
+	time.Sleep(100 * time.Millisecond)
+	_ = syscall.Kill(-pgid, syscall.SIGKILL)
+	_ = cmd.Process.Kill()
+	time.Sleep(200 * time.Millisecond)
 }
 
 // Func to create the main feature in order to print
 func CreateScript(filename string) (string, error) {
-	escapedName := EscapeFilename(filename)
-	basename := strings.TrimSuffix(escapedName, filepath.Ext(escapedName))
+	originalEscapedName := EscapeFilename(filename)
+	basename := strings.TrimSuffix(originalEscapedName, filepath.Ext(originalEscapedName))
+
+	// Prefijo para archivos temporales
+	tempEscapedName := "dccprint-temp-" + originalEscapedName
 	cfg := config.Load()
 	username := cfg.Account
 	printer := cfg.Printer
 	mode := cfg.Mode
 
 	// Create a temporal copy pdf to use in SCP and SSH if the escaped name is different than the filename
-	useTempCopy := escapedName != filename
+	useTempCopy := tempEscapedName != filename
 	if useTempCopy {
 		input, err := os.ReadFile(filename)
 		if err != nil {
 			return "", fmt.Errorf("Error leyendo el archivo seleccionado: %w", err)
 		}
-		err = os.WriteFile(escapedName, input, 0644)
+		err = os.WriteFile(tempEscapedName, input, 0644)
 		if err != nil {
 			return "", fmt.Errorf("Error creando copia temporal: %w", err)
 		}
@@ -135,8 +165,8 @@ echo '==============================================================='
 
 `
 	// SCP step
-	scriptContent += fmt.Sprintf("echo -e \"${GREEN}1. Subiendo archivo %s...${NC}\"\n", escapedName)
-	scriptContent += fmt.Sprintf("scp %q %s@anakena.dcc.uchile.cl:~\n", escapedName, username)
+	scriptContent += fmt.Sprintf("echo -e \"${GREEN}1. Subiendo archivo %s...${NC}\"\n", tempEscapedName)
+	scriptContent += fmt.Sprintf("scp %q %s@anakena.dcc.uchile.cl:~\n", tempEscapedName, username)
 	scriptContent += "if [ $? -ne 0 ]; then\n"
 	scriptContent += "  echo -e \"${RED}ERROR: Falló la subida del archivo a anakena. Verifica tu conexión y vuelve a intentar.${NC}\"\n"
 	scriptContent += "  exit 1\nfi\n\n"
@@ -146,18 +176,13 @@ echo '==============================================================='
 	scriptContent += fmt.Sprintf("ssh %s@anakena.dcc.uchile.cl << 'EOF'\n", username)
 
 	var printCommand string
-	pdfname := filepath.Base(escapedName)
+	pdfname := filepath.Base(tempEscapedName)
 	psname := strings.TrimSuffix(pdfname, filepath.Ext(pdfname)) + ".ps"
 
-	// Generate temporal .ps for validation and remove
-	cmd := exec.Command("pdf2ps", pdfname, psname)
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("Error generando el archivo .ps con pdf2ps: %w", err)
-	}
-	if err := ValidatePSWithGhostscript(psname); err != nil {
+	// Validate the PDF directly with Ghostscript for speed and reliability
+	if err := ValidatePDFWithGhostscript(filename); err != nil {
 		return "", err
 	}
-	_ = os.Remove(psname)
 
 	switch printer {
 	case "Toqui":
@@ -206,7 +231,7 @@ echo '==============================================================='
 	scriptContent += `rm -- "$0"`
 
 	if useTempCopy {
-		scriptContent += fmt.Sprintf("\nrm -- %q\n", escapedName)
+		scriptContent += fmt.Sprintf("\nrm -- %q\n", tempEscapedName)
 	}
 
 	err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
