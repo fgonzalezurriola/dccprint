@@ -200,8 +200,8 @@ func (m *Model) updatePrintView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.PrintView.StatusMessage = "Script generado exitosamente!\n" +
 				"Nombre del script generado: " + scriptName + "\n" +
-				"Comando copiado al clipboard: " + command +
-				"\nInstrucciones:\n" +
+				"Comando copiado al clipboard: " + command + "\n" +
+				"\nSiguientes pasos:\n" +
 				"> Ctrl+Shift+V + Enter para ejecutar el script\n" +
 				"> Ingresa tu contraseña SSH cuando se solicite\n" +
 				"\nPresiona Enter, q o Ctrl+C para salir."

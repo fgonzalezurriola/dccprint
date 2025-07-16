@@ -165,20 +165,20 @@ echo '==============================================================='
 
 	// SSH + cat sandwich to avoid asking two times the password
 	scriptContent += "echo -e \"${GREEN}Conectando a anakena y procesando archivo...${NC}\"\n"
-	scriptContent += fmt.Sprintf("cat %q | ssh %s@anakena.dcc.uchile.cl 'cat > %s && %s && %s'\n",
-		filename, username, pdfname, printCommand, queueCommand)
+	// scriptContent += fmt.Sprintf("cat %q | ssh %s@anakena.dcc.uchile.cl 'cat > %s && %s && %s'\n",
+	// 	filename, username, pdfname, printCommand, queueCommand)
 
 	// Todo: test this to avoid trash in anakena
-	// scriptContent += fmt.Sprintf(
-	//     "cat %q | ssh %s@anakena.dcc.uchile.cl 'cat > %s && %s && %s && rm %s %s'\n",
-	//     filename, username, pdfname, printCommand, queueCommand, pdfname, psname)
+	scriptContent += fmt.Sprintf("cat %q | ssh %s@anakena.dcc.uchile.cl 'cat > %s && %s && %s && rm %s %s'\n",
+	    filename, username, pdfname, printCommand, queueCommand, pdfname, psname)
 
 	scriptContent += "if [ $? -ne 0 ]; then\n"
 	scriptContent += "  echo -e \"${RED}ERROR: Falló la conexión o ejecución de comandos en anakena.${NC}\"\n"
 	scriptContent += "  exit 1\nfi\n\n"
 
 	scriptContent += "echo -e \"${GREEN}¡IMPRESIÓN COMPLETADA!${NC}\"\n"
-	scriptContent += "echo -e \"Recuerda: usa 'ssh usuario@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes.\"\n"
+	scriptContent += fmt.Sprintf("echo -e \"Recuerda: usa 'ssh %s@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes.\"\n", username)
+	scriptContent += "echo -e \"Nota: El comando papel se actualiza después de haber finalizado la impresión\"\n"
 
 	scriptPath := "dccprint-" + basename + ".sh"
 	// selfdestruction of script after use
