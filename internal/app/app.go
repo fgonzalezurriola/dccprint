@@ -198,14 +198,12 @@ func (m *Model) updatePrintView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err := scripts.CopyToClipboard(command); err != nil {
 			m.PrintView.StatusMessage = fmt.Sprintf("Error copiando al clipboard: %v", err)
 		} else {
-			m.PrintView.StatusMessage = "¡Script generado exitosamente!\n" +
+			m.PrintView.StatusMessage = "Script generado exitosamente!\n" +
+				"Nombre del script generado: " + scriptName + "\n" +
 				"Comando copiado al clipboard: " + command +
 				"\nInstrucciones:\n" +
-				"1. Ctrl+Shift+V para pegar el comando\n" +
-				"2. Enter para ejecutar\n" +
-				"3. Ingresa tu contraseña SSH cuando se solicite\n" +
-				"4. El archivo se enviará a la impresora\n" +
-				"5. ¡Esperar tu impresión!\n" +
+				"> Ctrl+Shift+V + Enter para ejecutar el script\n" +
+				"> Ingresa tu contraseña SSH cuando se solicite\n" +
 				"\nPresiona Enter, q o Ctrl+C para salir."
 		}
 		m.printCompleted = true

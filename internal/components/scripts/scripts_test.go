@@ -1,25 +1,8 @@
 package scripts
 
 import (
-	"log"
-	"os"
-	"path/filepath"
 	"testing"
 )
-
-func TestRemoveGeneratedScripts(t *testing.T) {
-	tempDir := t.TempDir()
-	testScriptPath := filepath.Join(tempDir, "dccprint_test.sh")
-	content := []byte("#!/usr/bin/env bash\necho 'hola'")
-	err := os.WriteFile(testScriptPath, content, 0755)
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
-	err = RemoveGeneratedScripts(tempDir)
-	if err != nil {
-		log.Fatalf("Error %v", err)
-	}
-}
 
 func TestEscapeFilename(t *testing.T) {
 	cases := []struct {

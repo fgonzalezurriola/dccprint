@@ -15,25 +15,6 @@ import (
 	"github.com/fgonzalezurriola/dccprint/internal/config"
 )
 
-// Func to remove al Shell Scripts that starts with "printdcc_"
-// RemoveGeneratedScripts deletes all generated shell scripts in the given directory that start with "dccprint_" and end with ".sh".
-func RemoveGeneratedScripts(dir string) error {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() && ((strings.HasPrefix(entry.Name(), "dccprint_") && strings.HasSuffix(entry.Name(), ".sh")) || strings.HasPrefix(entry.Name(), "dccprint-temp-")) {
-			fullPath := filepath.Join(dir, entry.Name())
-			err := os.Remove(fullPath)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 // Func to retrieve all pdfs in the current dir
 func GetPDFFiles() []string {
 	var PDFs []string
@@ -115,28 +96,15 @@ func CreateScript(filename string) (string, error) {
 	originalEscapedName := EscapeFilename(filename)
 	basename := strings.TrimSuffix(originalEscapedName, filepath.Ext(originalEscapedName))
 
-	// Prefijo para archivos temporales
-	tempEscapedName := "dccprint-temp-" + originalEscapedName
 	cfg := config.Load()
 	username := cfg.Account
 	printer := cfg.Printer
 	mode := cfg.Mode
 
-	// Create a temporal copy pdf to use in SCP and SSH if the escaped name is different than the filename
-	useTempCopy := tempEscapedName != filename
-	if useTempCopy {
-		input, err := os.ReadFile(filename)
-		if err != nil {
-			return "", fmt.Errorf("Error leyendo el archivo seleccionado: %w", err)
-		}
-		err = os.WriteFile(tempEscapedName, input, 0644)
-		if err != nil {
-			return "", fmt.Errorf("Error creando copia temporal: %w", err)
-		}
+	if err := ValidatePDFWithGhostscript(filename); err != nil {
+		return "", err
 	}
 
-	// If the script uses the escaped copy, it's deleted at the end
-	// The script rm itself after use
 	scriptContent := `#!/usr/bin/env bash
 ORANGE='\033[38;5;208m'
 GREEN='\033[0;32m'
@@ -145,45 +113,27 @@ NC='\033[0m'
 
 echo -e "${ORANGE}"
 echo '
-  ██████╗   ██████╗  ██████╗      ██████╗  ██████╗  ██╗ ███╗   ██╗ ████████╗
-  ██╔══██╗ ██╔════╝ ██╔════╝      ██╔══██╗ ██╔══██╗ ██║ ████╗  ██║ ╚══██╔══╝
-  ██║  ██║ ██║      ██║           ██████╔╝ ██████╔╝ ██║ ██╔██╗ ██║    ██║
-  ██║  ██║ ██║      ██║           ██╔═══╝  ██╔══██╗ ██║ ██║╚██╗██║    ██║
-  ██████╔╝ ╚██████╗ ╚██████╗      ██║      ██║  ██║ ██║ ██║ ╚████║    ██║
-  ╚═════╝   ╚═════╝  ╚═════╝      ╚═╝      ╚═╝  ╚═╝ ╚═╝ ╚═╝  ╚═══╝    ╚═╝
+  ██████╗   ██████╗  ██████╗ ██████╗  ██████╗  ██╗ ███╗   ██╗ ████████╗
+  ██╔══██╗ ██╔════╝ ██╔════╝ ██╔══██╗ ██╔══██╗ ██║ ████╗  ██║ ╚══██╔══╝
+  ██║  ██║ ██║      ██║      ██████╔╝ ██████╔╝ ██║ ██╔██╗ ██║    ██║
+  ██║  ██║ ██║      ██║      ██╔═══╝  ██╔══██╗ ██║ ██║╚██╗██║    ██║
+  ██████╔╝ ╚██████╗ ╚██████╗ ██║      ██║  ██║ ██║ ██║ ╚████║    ██║
+  ╚═════╝   ╚═════╝  ╚═════╝ ╚═╝      ╚═╝  ╚═╝ ╚═╝ ╚═╝  ╚═══╝    ╚═╝
 '
 echo -e "${NC}"
 
 echo '==============================================================='
 echo 'DCC PRINT - SCRIPT GENERADO'
-echo 'Este script:'	
-echo '1. Con SCP sube el archivo PDF a Anakena'
-echo '2. Con SSH se conecta y ejecuta comandos de impresión'
-echo '3. Usa el comando para imprimir según la configuración seleccionada'
-echo 'A continuación ingresa tu contraseña para subir el archivo'
+echo 'Este script:'    
+echo '1. Se conecta a Anakena con SSH'
+echo '2. Transfiere el archivo PDF con cat y ejecuta el comando de impresión'
 echo '==============================================================='
 
 `
-	// SCP step
-	scriptContent += fmt.Sprintf("echo -e \"${GREEN}1. Subiendo archivo %s...${NC}\"\n", tempEscapedName)
-	scriptContent += fmt.Sprintf("scp %q %s@anakena.dcc.uchile.cl:~\n", tempEscapedName, username)
-	scriptContent += "if [ $? -ne 0 ]; then\n"
-	scriptContent += "  echo -e \"${RED}ERROR: Falló la subida del archivo a anakena. Verifica tu conexión y vuelve a intentar.${NC}\"\n"
-	scriptContent += "  exit 1\nfi\n\n"
-
-	// SSH step
-	scriptContent += "echo -e \"${GREEN}2. Conectando a anakena y ejecutando comandos...${NC}\"\n"
-	scriptContent += fmt.Sprintf("ssh %s@anakena.dcc.uchile.cl << 'EOF'\n", username)
+	pdfname := "dccprint-" + basename + ".pdf"
+	psname := "dccprint-" + basename + ".ps"
 
 	var printCommand string
-	pdfname := filepath.Base(tempEscapedName)
-	psname := strings.TrimSuffix(pdfname, filepath.Ext(pdfname)) + ".ps"
-
-	// Validate the PDF directly with Ghostscript for speed and reliability
-	if err := ValidatePDFWithGhostscript(filename); err != nil {
-		return "", err
-	}
-
 	switch printer {
 	case "Toqui":
 		switch mode {
@@ -205,20 +155,23 @@ echo '==============================================================='
 		}
 	}
 
-	scriptContent += fmt.Sprintf("if [ ! -f \"%s\" ]; then\n", pdfname)
-	scriptContent += "  echo \"ERROR: El archivo PDF no se encontró en el directorio home\"\n"
-	scriptContent += "  exit 1\nfi\n\n"
-	scriptContent += printCommand + "\n\n"
-
+	var queueCommand string
 	switch printer {
 	case "Salita":
-		scriptContent += "lpq -P hp-335\n"
+		queueCommand = "lpq -P hp-335"
 	case "Toqui":
-		scriptContent += "lpq\n"
+		queueCommand = "lpq"
 	}
 
-	scriptContent += "papel\n"
-	scriptContent += "EOF\n\n"
+	// SSH + cat sandwich to avoid asking two times the password
+	scriptContent += "echo -e \"${GREEN}Conectando a anakena y procesando archivo...${NC}\"\n"
+	scriptContent += fmt.Sprintf("cat %q | ssh %s@anakena.dcc.uchile.cl 'cat > %s && %s && %s'\n",
+		filename, username, pdfname, printCommand, queueCommand)
+
+	// Todo: test this to avoid trash in anakena
+	// scriptContent += fmt.Sprintf(
+	//     "cat %q | ssh %s@anakena.dcc.uchile.cl 'cat > %s && %s && %s && rm %s %s'\n",
+	//     filename, username, pdfname, printCommand, queueCommand, pdfname, psname)
 
 	scriptContent += "if [ $? -ne 0 ]; then\n"
 	scriptContent += "  echo -e \"${RED}ERROR: Falló la conexión o ejecución de comandos en anakena.${NC}\"\n"
@@ -227,16 +180,13 @@ echo '==============================================================='
 	scriptContent += "echo -e \"${GREEN}¡IMPRESIÓN COMPLETADA!${NC}\"\n"
 	scriptContent += "echo -e \"Recuerda: usa 'ssh usuario@anakena.dcc.uchile.cl' y el comando 'papel' para ver impresiones restantes.\"\n"
 
-	scriptPath := "print-" + basename + ".sh"
+	scriptPath := "dccprint-" + basename + ".sh"
+	// selfdestruction of script after use
 	scriptContent += `rm -- "$0"`
 
-	if useTempCopy {
-		scriptContent += fmt.Sprintf("\nrm -- %q\n", tempEscapedName)
-	}
-
-	err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
-	if err != nil {
-		return "", fmt.Errorf("error escribiendo archivo: %w", err)
+	writeErr := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+	if writeErr != nil {
+		return "", fmt.Errorf("error escribiendo archivo: %w", writeErr)
 	}
 
 	return scriptPath, nil
