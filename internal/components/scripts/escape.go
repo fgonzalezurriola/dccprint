@@ -9,7 +9,6 @@ import (
 )
 
 // EscapeFilename cleans the filename by removing diacritics, spaces, and disallowed characters.
-// EscapeFilename cleans the filename by removing diacritics, spaces, and disallowed characters.
 func EscapeFilename(name string) string {
 	name = strings.ToLower(name)
 

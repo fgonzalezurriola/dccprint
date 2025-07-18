@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/atotto/clipboard"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fgonzalezurriola/dccprint/internal/config"
 )
 
@@ -198,22 +197,4 @@ func CopyToClipboard(text string) error {
 		return fmt.Errorf("error copiando al portapapeles: %w", importedErr)
 	}
 	return nil
-}
-
-func PrintSuccessMessage(scriptName string) tea.Cmd {
-	return func() tea.Msg {
-		fmt.Print("\n\n")
-		fmt.Println("Script generado exitosamente!")
-		fmt.Printf("Comando copiado: ./%s\n", scriptName)
-		fmt.Print("\n")
-		fmt.Println("Instrucciones:")
-		fmt.Println("1. Ctrl+Shift+V para pegar")
-		fmt.Println("2. Enter para ejecutar")
-		fmt.Println("3. Ingresa contraseña SSH")
-		fmt.Println("4. Archivo se enviará a impresora")
-		fmt.Print("\n")
-		fmt.Println("Listo para imprimir!")
-		fmt.Print("\n")
-		return nil
-	}
 }
