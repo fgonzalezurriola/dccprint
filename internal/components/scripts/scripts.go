@@ -38,8 +38,8 @@ func GetPDFFiles() []string {
 
 // ValidatePDFWithGhostscript validates a PDF file using Ghostscript with a 3-second timeout.
 // It uses fast flags (-o /dev/null -sDEVICE=nullpage) to avoid disk IO and speed up validation.
-// If Ghostscript does not finish in time, the process group is killed to avoid zombies (works on Mac and Linux).
-// Returns nil if the file is valid or if timeout is reached. Returns an error if Ghostscript detects a fatal error in the file.
+// Returns nil if the file is valid or if timeout is reached.
+// Returns an error if Ghostscript detects a fatal error in the file.
 func ValidatePDFWithGhostscript(pdfPath string) error {
 	if _, err := exec.LookPath("gs"); err != nil {
 		return fmt.Errorf("Ghostscript (gs) is not installed: %w", err)
@@ -169,7 +169,7 @@ echo '==============================================================='
 
 	// Todo: test this to avoid trash in anakena
 	scriptContent += fmt.Sprintf("cat %q | ssh %s@anakena.dcc.uchile.cl 'cat > %s && %s && %s && rm %s %s'\n",
-	    filename, username, pdfname, printCommand, queueCommand, pdfname, psname)
+		filename, username, pdfname, printCommand, queueCommand, pdfname, psname)
 
 	scriptContent += "if [ $? -ne 0 ]; then\n"
 	scriptContent += "  echo -e \"${RED}ERROR: Falló la conexión o ejecución de comandos en anakena.${NC}\"\n"
