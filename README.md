@@ -2,14 +2,13 @@
 
 DCCPRINT es una Terminal User Interface (TUI) escrita en Go, junto a la librería de BubbleTea, para que estudiantes puedan imprimir archivos `.pdf` dentro del Departamento de Ciencias de la Computación de la Universidad de Chile.
 
+![dccprint](assets/dccprint.mp4)
+
 ## Requisitos
 
 Tener una cuenta DCC, esta cuenta se puede pedir al obtener el código DCC. Las instrucciones para pedirla se encuentran en [la página de sistemas](https://sistemas.dcc.uchile.cl/)
 
 Tener una máquina con sistema operativo macOS o Linux.
-
-> [!WARNING]
-> Esto no ha sido testeado con WSL. En teoría debería funcionar, de ser así hazmelo saber en mi telegram @fgonzalezurriola o en una issue de github.
 
 ## Uso
 
@@ -98,7 +97,7 @@ sudo snap refresh
 
 También está contemplada la distribución en formato `.deb`, `.rpm` o `.apk` usando el script de `install.sh` puedes instalar dccprint
 
-### Debian / Ubuntu / Fedora / openSUSE / Alpine Linux
+### Debian / Ubuntu / Fedora / openSUSE / Alpine Linux / WSL
 
 Para **Instalar** o **Actualizar** usa curl o wget para descargar y ejecutar el script de instalación
 
