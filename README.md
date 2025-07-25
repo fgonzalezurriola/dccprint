@@ -2,7 +2,7 @@
 
 DCCPRINT es una Terminal User Interface (TUI) escrita en Go, junto a la librería de BubbleTea, para que estudiantes puedan imprimir archivos `.pdf` dentro del Departamento de Ciencias de la Computación de la Universidad de Chile.
 
-![dccprint](assets/dccprint.mp4)
+![dccprint](assets/dccprint.gif)
 
 ## Requisitos
 
