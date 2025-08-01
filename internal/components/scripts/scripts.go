@@ -133,24 +133,26 @@ echo '==============================================================='
 	psname := "dccprint-" + basename + ".ps"
 
 	var printCommand string
+	copies := 1
+	copiesFlag := fmt.Sprintf("-#%d", copies)
 	switch printer {
 	case "Toqui":
 		switch mode {
 		case "Simple (Reverso en blanco)":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && lpr %s", pdfname, psname, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && lpr %s %s", pdfname, psname, copiesFlag, psname)
 		case "Doble cara, Borde largo (Recomendado)":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s|lpr", pdfname, psname, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s|lpr %s", pdfname, psname, psname, copiesFlag)
 		case "Doble cara, Borde corto":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr", pdfname, psname, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr %s", pdfname, psname, psname, copiesFlag)
 		}
 	case "Salita":
 		switch mode {
 		case "Simple (Reverso en blanco)":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && lpr -P hp-335 %s", pdfname, psname, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && lpr -P hp-335 %s %s", pdfname, psname, copiesFlag, psname)
 		case "Doble cara, Borde largo (Recomendado)":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s|lpr -P hp-335", pdfname, psname, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s|lpr -P hp-335 %s", pdfname, psname, psname, copiesFlag)
 		case "Doble cara, Borde corto":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr -P hp-335", pdfname, psname, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr -P hp-335 %s", pdfname, psname, psname, copiesFlag)
 		}
 	}
 

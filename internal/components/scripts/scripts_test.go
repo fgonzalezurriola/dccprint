@@ -25,9 +25,9 @@ func TestEscapeFilename(t *testing.T) {
 }
 
 func TestCopyToClipboard(t *testing.T) {
-	text := "Prueba de Clipboard"
+	text := "Clipboard test"
 	err := CopyToClipboard(text)
 	if err != nil {
-		t.Errorf("CopyToClipboard devolvió error: %v", err)
+		t.Errorf("CopyToClipboard error: %v", err)
 	}
 }
