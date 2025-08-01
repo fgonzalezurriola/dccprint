@@ -8,7 +8,7 @@ DCCPRINT es una Terminal User Interface (TUI) escrita en Go, junto a la librerí
 
 Tener una cuenta DCC, esta cuenta se puede pedir al obtener el código DCC. Las instrucciones para pedirla se encuentran en [la página de sistemas](https://sistemas.dcc.uchile.cl/)
 
-Tener una máquina con sistema operativo macOS o Linux.
+Tener una máquina con sistema operativo macOS o Linux, también puedes usar WSL.
 
 ## Uso
 
@@ -37,6 +37,12 @@ Con esto se envía el comando para imprimir con la configuración guardada en `$
 > [!TIP]
 > El archivo `.sh` generado se autoelimina en el uso.
 > Puedes usar `cat` para ver su contenido antes de ejecutarlo
+
+## Nota Para imprimir múltiples copias
+
+Para imprimir más de una copia, antes de ejecutar el script, con un editor de código, cambia el valor de `cat ... -#1 ...` (por ejemplo, `-#3` para tres copias)
+
+Este paso se decidió hacerlo manual para mantener simple el menú de imprimir y el código
 
 ## Instalación
 
