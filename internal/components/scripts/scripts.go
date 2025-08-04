@@ -170,7 +170,8 @@ echo '==============================================================='
 	// 	filename, username, pdfname, printCommand, queueCommand)
 
 	// Todo: test this to avoid trash in anakena
-	scriptContent += fmt.Sprintf("cat %q | ssh %s@anakena.dcc.uchile.cl 'cat > %s && %s && %s && rm %s %s'\n",
+	// Use -o ControlMaster=no to avoid SSH multiplexing issues
+	scriptContent += fmt.Sprintf("cat %q | ssh -o ControlMaster=no %s@anakena.dcc.uchile.cl 'cat > %s && %s && %s && rm %s %s'\n",
 		filename, username, pdfname, printCommand, queueCommand, pdfname, psname)
 
 	scriptContent += "if [ $? -ne 0 ]; then\n"
