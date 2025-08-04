@@ -67,6 +67,12 @@ fi
 echo "Instalando dccprint (puede requerir tu contraseña de sudo)..."
 $INSTALL "$FILE"
 
+# Si es un sistema basado en apt, corregir dependencias si es necesario
+if [ "$PKG" = "deb" ] && command -v apt-get >/dev/null; then
+    echo "Ejecutando 'sudo apt-get install -f -y' para corregir dependencias si es necesario..."
+    sudo apt-get install -f -y
+fi
+
 echo "Limpiando archivos temporales..."
 rm "$FILE"
 
