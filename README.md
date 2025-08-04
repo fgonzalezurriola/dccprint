@@ -40,9 +40,7 @@ Con esto se envía el comando para imprimir con la configuración guardada en `$
 
 ## Nota Para imprimir múltiples copias
 
-Para imprimir más de una copia, antes de ejecutar el script, con un editor de código, cambia el valor de `cat ... -#1 ...` (por ejemplo, `-#3` para tres copias)
-
-Este paso se decidió hacerlo manual para mantener simple el menú de imprimir y el código
+Las impresoras no admiten múltiples enviar a imprimir múltiples copias con postscript, por lo que tendras que usar alguna herramienta como [ilovepdf](https://www.ilovepdf.com/)
 
 ## Instalación
 
