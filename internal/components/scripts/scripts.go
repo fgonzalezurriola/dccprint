@@ -60,11 +60,11 @@ func ValidatePDFWithGhostscript(pdfPath string) error {
 	select {
 	case err := <-done:
 		outStr := output.String()
+		if strings.Contains(outStr, "Error") || strings.Contains(outStr, "FATAL") || strings.Contains(outStr, "Unrecoverable error") {
+			return fmt.Errorf("ghostscript validation failed: %s", outStr)
+		}
 		if err != nil {
-			if strings.Contains(outStr, "Error") || strings.Contains(outStr, "FATAL") || strings.Contains(outStr, "Unrecoverable error") {
-				return fmt.Errorf("Ghostscript detected fatal error in PDF file. Output: %s", outStr)
-			}
-			return nil
+			return fmt.Errorf("ghostscript exited with error: %w; output: %s", err, outStr)
 		}
 		return nil
 	case <-time.After(3 * time.Second):
