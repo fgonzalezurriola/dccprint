@@ -11,3 +11,7 @@ type ModeView struct {
 func NewModeView(items []string, theme *theme.Theme) ModeView {
 	return ModeView{Menu: NewMenu(items, theme)}
 }
+
+func (m *ModeView) SetTheme(theme *theme.Theme) {
+	m.Menu.SetTheme(theme)
+}

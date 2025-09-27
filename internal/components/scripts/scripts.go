@@ -42,7 +42,7 @@ func GetPDFFiles() []string {
 // Returns an error if Ghostscript detects a fatal error in the file.
 func ValidatePDFWithGhostscript(pdfPath string) error {
 	if _, err := exec.LookPath("gs"); err != nil {
-		return fmt.Errorf("Ghostscript (gs) is not installed: %w", err)
+		return fmt.Errorf("ghostscript (gs) is not installed: %w", err)
 	}
 
 	cmd := exec.Command("gs", "-o", "/dev/null", "-sDEVICE=nullpage", pdfPath)
@@ -51,7 +51,7 @@ func ValidatePDFWithGhostscript(pdfPath string) error {
 	cmd.Stdout = &output
 	cmd.Stderr = &output
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("Could not start Ghostscript: %w", err)
+		return fmt.Errorf("could not start Ghostscript: %w", err)
 	}
 	done := make(chan error, 1)
 	go func() {

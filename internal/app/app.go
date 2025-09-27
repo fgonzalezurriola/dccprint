@@ -243,8 +243,11 @@ func (m *Model) updateThemeView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.theme = theme.New(m.themeManager.Current)
 		m.mainMenu.SetTheme(m.theme)
 		m.themeMenu.SetTheme(m.theme)
-		m.accountManager.AccountInput.PromptStyle = lipgloss.NewStyle().Foreground(m.theme.Selected)
-		m.accountManager.AccountInput.TextStyle = lipgloss.NewStyle().Foreground(m.theme.Header)
+		m.PrintView.SetTheme(m.theme)
+		m.PrinterView.SetTheme(m.theme)
+		m.ModeView.SetTheme(m.theme)
+		m.accountManager.SetTheme(m.theme)
+		m.freshManager.SetTheme(m.theme)
 		m.mainMenu.Reset()
 		m.viewController.Set(MainView)
 	}

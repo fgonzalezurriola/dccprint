@@ -23,6 +23,11 @@ func NewManager(t *theme.Theme, cfg config.Config) Manager {
 	return Manager{AccountInput: ti}
 }
 
+func (a *Manager) SetTheme(t *theme.Theme) {
+	a.AccountInput.PromptStyle = lipgloss.NewStyle().Foreground(t.Selected)
+	a.AccountInput.TextStyle = lipgloss.NewStyle().Foreground(t.Header)
+}
+
 func (a *Manager) SaveAccount() {
 	account := a.AccountInput.Value()
 	config.SaveAccount(account)

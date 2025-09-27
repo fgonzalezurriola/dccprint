@@ -22,6 +22,11 @@ func NewFreshManager(t *theme.Theme) FreshManager {
 	return FreshManager{AccountInput: ti}
 }
 
+func (a *FreshManager) SetTheme(t *theme.Theme) {
+	a.AccountInput.PromptStyle = lipgloss.NewStyle().Foreground(t.Selected)
+	a.AccountInput.TextStyle = lipgloss.NewStyle().Foreground(t.Header)
+}
+
 func (a *FreshManager) SaveAccount() {
 	account := a.AccountInput.Value()
 	config.SaveAccount(account)

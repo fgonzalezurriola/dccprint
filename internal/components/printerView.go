@@ -11,3 +11,7 @@ type PrinterView struct {
 func NewPrinterView(items []string, theme *theme.Theme) PrinterView {
 	return PrinterView{Menu: NewMenu(items, theme)}
 }
+
+func (p *PrinterView) SetTheme(theme *theme.Theme) {
+	p.Menu.SetTheme(theme)
+}
