@@ -99,10 +99,19 @@ func CreateScript(filename string) (string, error) {
 	username := cfg.Account
 	printer := cfg.Printer
 	mode := cfg.Mode
+	paperSize := "letter"
+	pdf2psOptions := fmt.Sprintf("-dFIXEDMEDIA -dPDFFitPage -sPAPERSIZE=%s", paperSize)
 
 	if err := ValidatePDFWithGhostscript(filename); err != nil {
 		return "", err
 	}
+
+	printerFlag := ""
+	if printer == "Salita" {
+		printerFlag = "-P hp-335"
+	}
+	lprCommonOptions := "-o media=letter -o fit-to-page"
+	lprCommand := strings.TrimSpace(fmt.Sprintf("lpr %s %s", printerFlag, lprCommonOptions))
 
 	scriptContent := `#!/usr/bin/env bash
 ORANGE='\033[38;5;208m'
@@ -139,20 +148,20 @@ echo '==============================================================='
 	case "Toqui":
 		switch mode {
 		case "Simple (Reverso en blanco)":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && lpr %s %s", pdfname, psname, copiesFlag, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s %s && %s %s %s", pdf2psOptions, pdfname, psname, lprCommand, copiesFlag, psname)
 		case "Doble cara, Borde largo (Recomendado)":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s|lpr %s %s", pdfname, psname, psname, copiesFlag, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s %s && duplex %s | %s %s %s", pdf2psOptions, pdfname, psname, psname, lprCommand, copiesFlag, psname)
 		case "Doble cara, Borde corto":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr %s %s", pdfname, psname, psname, copiesFlag, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s %s && duplex -l %s | %s %s %s", pdf2psOptions, pdfname, psname, psname, lprCommand, copiesFlag, psname)
 		}
 	case "Salita":
 		switch mode {
 		case "Simple (Reverso en blanco)":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && lpr -P hp-335 %s %s", pdfname, psname, copiesFlag, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s %s && %s %s %s", pdf2psOptions, pdfname, psname, lprCommand, copiesFlag, psname)
 		case "Doble cara, Borde largo (Recomendado)":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s|lpr -P hp-335 %s %s", pdfname, psname, psname, copiesFlag, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s %s && duplex %s | %s %s %s", pdf2psOptions, pdfname, psname, psname, lprCommand, copiesFlag, psname)
 		case "Doble cara, Borde corto":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr -P hp-335 %s %s", pdfname, psname, psname, copiesFlag, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s %s && duplex -l %s | %s %s %s", pdf2psOptions, pdfname, psname, psname, lprCommand, copiesFlag, psname)
 		}
 	}
 
