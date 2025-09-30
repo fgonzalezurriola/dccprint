@@ -132,28 +132,42 @@ echo '==============================================================='
 	pdfname := "dccprint-" + basename + ".pdf"
 	psname := "dccprint-" + basename + ".ps"
 
+	// Legacy mode normalization: older configs stored short values ("Simple", "Doble")
+	// New UI stores verbose values. Normalize here so switches below always match.
+	modeNormalized := mode
+	switch mode {
+	case "Simple":
+		modeNormalized = "Simple (Reverso en blanco)"
+	case "Doble":
+		modeNormalized = "Doble cara, Borde largo (Recomendado)"
+	}
+
 	var printCommand string
 	copies := 1
 	copiesFlag := fmt.Sprintf("-#%d", copies)
 	switch printer {
 	case "Toqui":
-		switch mode {
+		switch modeNormalized {
 		case "Simple (Reverso en blanco)":
 			printCommand = fmt.Sprintf("pdf2ps %s %s && lpr %s %s", pdfname, psname, copiesFlag, psname)
 		case "Doble cara, Borde largo (Recomendado)":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s|lpr %s %s", pdfname, psname, psname, copiesFlag, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s | lpr %s", pdfname, psname, psname, copiesFlag)
 		case "Doble cara, Borde corto":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr %s %s", pdfname, psname, psname, copiesFlag, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s | lpr %s", pdfname, psname, psname, copiesFlag)
 		}
 	case "Salita":
-		switch mode {
+		switch modeNormalized {
 		case "Simple (Reverso en blanco)":
 			printCommand = fmt.Sprintf("pdf2ps %s %s && lpr -P hp-335 %s %s", pdfname, psname, copiesFlag, psname)
 		case "Doble cara, Borde largo (Recomendado)":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s|lpr -P hp-335 %s %s", pdfname, psname, psname, copiesFlag, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex %s | lpr -P hp-335 %s", pdfname, psname, psname, copiesFlag)
 		case "Doble cara, Borde corto":
-			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s|lpr -P hp-335 %s %s", pdfname, psname, psname, copiesFlag, psname)
+			printCommand = fmt.Sprintf("pdf2ps %s %s && duplex -l %s | lpr -P hp-335 %s", pdfname, psname, psname, copiesFlag)
 		}
+	}
+
+	if printCommand == "" {
+		return "", fmt.Errorf("unsupported print mode '%s' (normalized from '%s') - update configuration", modeNormalized, mode)
 	}
 
 	var queueCommand string
